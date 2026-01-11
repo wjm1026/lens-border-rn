@@ -3,8 +3,13 @@ import {StyleSheet} from 'react-native';
 import {colors} from '../../theme';
 
 const PREVIEW_HORIZONTAL_PADDING = 88;
+const EXIF_PADDING_EXTRA = 40;
 
-export const createStyles = (windowWidth: number) =>
+export const createStyles = (
+  windowWidth: number,
+  framePadding: number,
+  imageAspectRatio: number,
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -39,8 +44,8 @@ export const createStyles = (windowWidth: number) =>
     },
     imageFrame: {
       backgroundColor: colors.white,
-      padding: 20,
-      paddingBottom: 60,
+      padding: framePadding,
+      paddingBottom: framePadding + EXIF_PADDING_EXTRA,
       shadowColor: colors.black,
       shadowOffset: {width: 0, height: 10},
       shadowOpacity: 0.5,
@@ -48,8 +53,11 @@ export const createStyles = (windowWidth: number) =>
       elevation: 10,
     },
     previewImage: {
-      width: Math.max(0, windowWidth - PREVIEW_HORIZONTAL_PADDING),
-      aspectRatio: 3 / 2,
+      width: Math.max(
+        0,
+        windowWidth - PREVIEW_HORIZONTAL_PADDING - framePadding * 2,
+      ),
+      aspectRatio: imageAspectRatio,
       backgroundColor: colors.placeholder,
     },
     exifOverlay: {
@@ -72,54 +80,16 @@ export const createStyles = (windowWidth: number) =>
     },
     settingsPanel: {
       backgroundColor: colors.surface,
-      padding: 20,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 10,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
     },
-    settingsTitle: {
+    placeholderText: {
       color: colors.textSecondary,
-      fontSize: 13,
-      marginBottom: 20,
-    },
-    sliderTrack: {
-      height: 4,
-      backgroundColor: colors.border,
-      borderRadius: 2,
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 24,
-    },
-    sliderFill: {
-      height: '100%',
-      backgroundColor: colors.accent,
-      borderRadius: 2,
-    },
-    sliderThumb: {
-      position: 'absolute',
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: colors.white,
-      borderWidth: 4,
-      borderColor: colors.accent,
-    },
-    ratioContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: 10,
-    },
-    ratioButton: {
-      backgroundColor: colors.border,
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 12,
-      flex: 1,
-      marginHorizontal: 4,
-      alignItems: 'center',
-    },
-    ratioText: {
-      color: colors.textPrimary,
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: 14,
+      textAlign: 'center',
+      paddingVertical: 20,
     },
   });
