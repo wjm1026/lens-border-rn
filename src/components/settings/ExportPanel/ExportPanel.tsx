@@ -26,13 +26,18 @@ interface ExportPanelProps {
     value: FrameSettings[K],
   ) => void;
   onSave?: () => void;
+  isSaving?: boolean;
 }
 
 export default function ExportPanel({
   settings,
   updateSettings,
   onSave,
+  isSaving = false,
 }: ExportPanelProps) {
+  const isDisabled = isSaving || !onSave;
+  const buttonLabel = isSaving ? '保存中...' : '保存到相册';
+
   return (
     <View style={styles.container}>
       <SegmentedControl<FrameSettings['exportFormat']>
@@ -55,10 +60,11 @@ export default function ExportPanel({
       )}
 
       <TouchableOpacity
-        style={styles.saveButton}
+        style={[styles.saveButton, isDisabled && styles.saveButtonDisabled]}
         onPress={onSave}
-        activeOpacity={0.8}>
-        <Text style={styles.saveButtonText}>保存到相册</Text>
+        activeOpacity={0.8}
+        disabled={isDisabled}>
+        <Text style={styles.saveButtonText}>{buttonLabel}</Text>
       </TouchableOpacity>
 
       <View style={styles.hintBox}>
@@ -80,6 +86,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   saveButtonText: {
     color: colors.white,

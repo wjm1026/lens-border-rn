@@ -26,6 +26,7 @@ export interface LineStyle {
 }
 
 export type AspectRatio = 'original' | 'square' | 'portrait' | 'landscape';
+export type CropAspectId = 'free' | '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
 
 export interface FrameSettings {
   // 布局

@@ -14,7 +14,7 @@ import {
   type SegmentedOption,
 } from '../../ui/SegmentedControl';
 
-export type CropAspectId = 'free' | '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
+import type {CropAspectId} from '../../../types';
 
 const CROP_ASPECT_OPTIONS: SegmentedOption<CropAspectId>[] = [
   {id: 'free', label: '自由'},
