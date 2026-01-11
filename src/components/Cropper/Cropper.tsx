@@ -20,6 +20,7 @@ interface CropperProps {
 }
 
 const HANDLE_SIZE = 24;
+const HIT_SLOP = {top: 20, bottom: 20, left: 20, right: 20};
 
 export const Cropper: React.FC<CropperProps> = ({
   imageUri,
@@ -32,8 +33,10 @@ export const Cropper: React.FC<CropperProps> = ({
 }) => {
   const [viewSize, setViewSize] = useState({width: 0, height: 0});
   const [imageSize, setImageSize] = useState({width: 0, height: 0});
-  // visualFitSize: Screen-fit size of the Visible (Rotated) Image Area without zoom
+  // visualFitSize: Unscaled size that fits the view for the rotated image
   const [visualFitSize, setVisualFitSize] = useState({width: 0, height: 0});
+
+  const prevAspectRatioRef = useRef(aspectRatio);
 
   useEffect(() => {
     let isActive = true;
@@ -76,11 +79,43 @@ export const Cropper: React.FC<CropperProps> = ({
     }
   }, [viewSize, imageSize, rotation]);
 
-  // Derived: Current Visual Image Size (With Zoom)
+  // Handle Aspect Ratio Change
+  useEffect(() => {
+    if (
+      aspectRatio !== undefined &&
+      aspectRatio !== prevAspectRatioRef.current
+    ) {
+      if (visualFitSize.width > 0 && visualFitSize.height > 0) {
+        const visualRatio = visualFitSize.width / visualFitSize.height;
+        let newW = 1,
+          newH = 1;
+
+        // Calculate normalized size that matches aspect ratio
+        // newW_norm / newH_norm = aspectRatio / visualRatio
+        const targetNormRatio = aspectRatio / visualRatio;
+
+        if (targetNormRatio > 1) {
+          newW = 1;
+          newH = 1 / targetNormRatio;
+        } else {
+          newH = 1;
+          newW = targetNormRatio;
+        }
+
+        onCropChange({
+          x: (1 - newW) / 2,
+          y: (1 - newH) / 2,
+          width: newW,
+          height: newH,
+        });
+      }
+    }
+    prevAspectRatioRef.current = aspectRatio;
+  }, [aspectRatio, visualFitSize, onCropChange]);
+
   const currentVisualW = visualFitSize.width * zoom;
   const currentVisualH = visualFitSize.height * zoom;
 
-  // Visual Rect (Relative to the Zoomed Wrapper)
   const getVisualRect = useCallback(() => {
     return {
       x: cropRect.x * currentVisualW,
@@ -178,6 +213,11 @@ export const Cropper: React.FC<CropperProps> = ({
         if (aspectRatio) {
           const signW = handle.includes('l') ? -1 : 1;
           const signH = handle.includes('t') ? -1 : 1;
+
+          // For constraint resizing, we need to pick a primary axis
+          // Usually keeping one side fixed.
+          // Simplified logic: calculate based on dominant drag delta
+
           if (Math.abs(dx) > Math.abs(dy)) {
             width = startRect.width + dx * signW;
             height = width / aspectRatio;
@@ -185,9 +225,12 @@ export const Cropper: React.FC<CropperProps> = ({
             height = startRect.height + dy * signH;
             width = height * aspectRatio;
           }
+
+          // Adjust origin if pulling from left/top
           if (handle.includes('l')) x = startRect.x + startRect.width - width;
           if (handle.includes('t')) y = startRect.y + startRect.height - height;
         }
+
         const clamped = clampRect(x, y, width, height);
         updateNormalizedRect(
           clamped.x,
@@ -324,18 +367,22 @@ export const Cropper: React.FC<CropperProps> = ({
 
           <View
             style={[styles.handle, styles.handleTL]}
+            hitSlop={HIT_SLOP}
             {...handleResponders.tl.panHandlers}
           />
           <View
             style={[styles.handle, styles.handleTR]}
+            hitSlop={HIT_SLOP}
             {...handleResponders.tr.panHandlers}
           />
           <View
             style={[styles.handle, styles.handleBL]}
+            hitSlop={HIT_SLOP}
             {...handleResponders.bl.panHandlers}
           />
           <View
             style={[styles.handle, styles.handleBR]}
+            hitSlop={HIT_SLOP}
             {...handleResponders.br.panHandlers}
           />
         </View>

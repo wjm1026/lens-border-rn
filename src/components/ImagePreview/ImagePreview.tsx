@@ -148,9 +148,9 @@ export default function ImagePreview({
               style={{
                 width: visualW,
                 height: visualH,
-                marginLeft: -cropRect.x * visualW,
-                marginTop: -cropRect.y * visualH,
-                position: 'relative',
+                left: -cropRect.x * visualW,
+                top: -cropRect.y * visualH,
+                position: 'absolute',
                 overflow: 'hidden',
               }}>
               <Image
