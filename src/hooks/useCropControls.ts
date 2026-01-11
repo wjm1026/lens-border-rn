@@ -12,7 +12,7 @@ export const useCropControls = (imageUri: string) => {
     horizontal: false,
     vertical: false,
   });
-  
+
   // 默认全选 (0,0,1,1)
   const [cropRect, setCropRect] = useState<CropRect>({
     x: 0,

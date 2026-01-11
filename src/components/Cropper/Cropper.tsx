@@ -43,7 +43,9 @@ export const Cropper: React.FC<CropperProps> = ({
     Image.getSize(
       imageUri,
       (width, height) => {
-        if (isActive) setImageSize({width, height});
+        if (isActive) {
+          setImageSize({width, height});
+        }
       },
       () => {},
     );
@@ -127,7 +129,9 @@ export const Cropper: React.FC<CropperProps> = ({
 
   const updateNormalizedRect = useCallback(
     (vx: number, vy: number, vw: number, vh: number) => {
-      if (currentVisualW === 0 || currentVisualH === 0) return;
+      if (currentVisualW === 0 || currentVisualH === 0) {
+        return;
+      }
       onCropChange({
         x: vx / currentVisualW,
         y: vy / currentVisualH,
@@ -157,11 +161,15 @@ export const Cropper: React.FC<CropperProps> = ({
 
       if (newW > maxX) {
         newW = maxX;
-        if (aspectRatio) newH = newW / aspectRatio;
+        if (aspectRatio) {
+          newH = newW / aspectRatio;
+        }
       }
       if (newH > maxY) {
         newH = maxY;
-        if (aspectRatio) newW = newH * aspectRatio;
+        if (aspectRatio) {
+          newW = newH * aspectRatio;
+        }
       }
 
       let newX = Math.max(0, Math.min(x, maxX - newW));
@@ -180,66 +188,68 @@ export const Cropper: React.FC<CropperProps> = ({
     handle: '',
   });
 
-  const createHandleResponder = (handle: string) =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        gestureRef.current = {
-          startX: 0,
-          startY: 0,
-          startRect: getVisualRect(),
-          mode: 'resize',
-          handle,
-        };
-      },
-      onPanResponderMove: (evt, gestureState) => {
-        const {startRect, handle} = gestureRef.current;
-        const {dx, dy} = gestureState;
-        let {x, y, width, height} = startRect;
+  const createHandleResponder = useCallback(
+    (handle: string) =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          gestureRef.current = {
+            startX: 0,
+            startY: 0,
+            startRect: getVisualRect(),
+            mode: 'resize',
+            handle,
+          };
+        },
+        onPanResponderMove: (evt, gestureState) => {
+          const {startRect, handle: activeHandle} = gestureRef.current;
+          const {dx, dy} = gestureState;
+          let {x, y, width, height} = startRect;
 
-        if (handle.includes('l')) {
-          x += dx;
-          width -= dx;
-        } else {
-          width += dx;
-        }
-        if (handle.includes('t')) {
-          y += dy;
-          height -= dy;
-        } else {
-          height += dy;
-        }
-
-        if (aspectRatio) {
-          const signW = handle.includes('l') ? -1 : 1;
-          const signH = handle.includes('t') ? -1 : 1;
-
-          // For constraint resizing, we need to pick a primary axis
-          // Usually keeping one side fixed.
-          // Simplified logic: calculate based on dominant drag delta
-
-          if (Math.abs(dx) > Math.abs(dy)) {
-            width = startRect.width + dx * signW;
-            height = width / aspectRatio;
+          if (activeHandle.includes('l')) {
+            x += dx;
+            width -= dx;
           } else {
-            height = startRect.height + dy * signH;
-            width = height * aspectRatio;
+            width += dx;
+          }
+          if (activeHandle.includes('t')) {
+            y += dy;
+            height -= dy;
+          } else {
+            height += dy;
           }
 
-          // Adjust origin if pulling from left/top
-          if (handle.includes('l')) x = startRect.x + startRect.width - width;
-          if (handle.includes('t')) y = startRect.y + startRect.height - height;
-        }
+          if (aspectRatio) {
+            const signW = activeHandle.includes('l') ? -1 : 1;
+            const signH = activeHandle.includes('t') ? -1 : 1;
 
-        const clamped = clampRect(x, y, width, height);
-        updateNormalizedRect(
-          clamped.x,
-          clamped.y,
-          clamped.width,
-          clamped.height,
-        );
-      },
-    });
+            if (Math.abs(dx) > Math.abs(dy)) {
+              width = startRect.width + dx * signW;
+              height = width / aspectRatio;
+            } else {
+              height = startRect.height + dy * signH;
+              width = height * aspectRatio;
+            }
+
+            if (activeHandle.includes('l')) {
+              x = startRect.x + startRect.width - width;
+            }
+            if (activeHandle.includes('t')) {
+              y = startRect.y + startRect.height - height;
+            }
+          }
+
+          const clamped = clampRect(x, y, width, height);
+          updateNormalizedRect(
+            clamped.x,
+            clamped.y,
+            clamped.width,
+            clamped.height,
+          );
+        },
+      }),
+    [aspectRatio, clampRect, getVisualRect, updateNormalizedRect],
+  );
 
   const moveResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -272,7 +282,7 @@ export const Cropper: React.FC<CropperProps> = ({
       bl: createHandleResponder('bl'),
       br: createHandleResponder('br'),
     }),
-    [aspectRatio, clampRect, updateNormalizedRect, getVisualRect],
+    [createHandleResponder],
   );
 
   const vRect = getVisualRect();

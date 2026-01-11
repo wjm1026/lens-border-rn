@@ -82,6 +82,7 @@ export interface FrameSettings {
   // 导出
   exportFormat: 'png' | 'jpeg';
   exportQuality: number;
+  exportScale: number; // 1-4x，导出分辨率倍数
 }
 
 export const DEFAULT_SETTINGS: FrameSettings = {
@@ -127,4 +128,5 @@ export const DEFAULT_SETTINGS: FrameSettings = {
   customExif: {},
   exportFormat: 'png',
   exportQuality: 0.9,
+  exportScale: 3,
 };

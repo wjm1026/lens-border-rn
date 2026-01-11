@@ -10,7 +10,7 @@ export {default as BottomTabs} from './BottomTabs';
 export type {TabId} from './BottomTabs';
 export {BackgroundLayer} from './BackgroundLayer';
 export {EditorHeader} from './EditorHeader';
-export {ImagePreview} from './ImagePreview';
+export {ImagePreview, HighResExport} from './ImagePreview';
 export {InfoOverlay} from './InfoOverlay';
 export {Cropper} from './Cropper';
 

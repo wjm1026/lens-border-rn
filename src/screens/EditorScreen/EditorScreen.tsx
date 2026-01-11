@@ -6,12 +6,12 @@
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import {StatusBar, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import type ViewShot from 'react-native-view-shot';
 
 import {
   BottomTabs,
   EditorHeader,
   ImagePreview,
+  HighResExport,
   Cropper,
   type TabId,
 } from '../../components';
@@ -23,7 +23,10 @@ import {
 } from '../../types';
 import {useCropControls} from '../../hooks/useCropControls';
 import {useImageAspectRatio} from '../../hooks/useImageAspectRatio';
-import {useSaveToCameraRoll} from '../../hooks/useSaveToCameraRoll';
+import {
+  useSaveToCameraRoll,
+  type ExportSettings,
+} from '../../hooks/useSaveToCameraRoll';
 import EditorSettingsPanel from './EditorSettingsPanel';
 import {styles} from './styles';
 
@@ -33,9 +36,13 @@ interface EditorScreenProps {
 }
 
 const getAspectRatioNumber = (id: CropAspectId): number | undefined => {
-  if (id === 'free') return undefined;
+  if (id === 'free') {
+    return undefined;
+  }
   const parts = id.split(':');
-  if (parts.length === 2) return Number(parts[0]) / Number(parts[1]);
+  if (parts.length === 2) {
+    return Number(parts[0]) / Number(parts[1]);
+  }
   return undefined;
 };
 
@@ -45,12 +52,54 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
   const [settings, setSettings] = useState<FrameSettings>(DEFAULT_SETTINGS);
   const imageAspectRatio = useImageAspectRatio(imageUri);
   const cropControls = useCropControls(imageUri);
-  const viewShotRef = useRef<ViewShot | null>(null);
-  const {handleSave, isSaving} = useSaveToCameraRoll(viewShotRef);
+
+  // 使用新的高分辨率导出 ref
+  const highResCaptureRef = useRef<View>(null);
+  // 仅用于预览的 dummy ref，避免 hook 规则错误
+  const previewCaptureRef = useRef(null);
+
+  // 导出设置
+  const exportSettings: ExportSettings = useMemo(
+    () => ({
+      format: settings.exportFormat === 'jpeg' ? 'jpg' : 'png',
+      quality: settings.exportQuality,
+      scale: settings.exportScale,
+    }),
+    [settings.exportFormat, settings.exportQuality, settings.exportScale],
+  );
+
+  // 核心 hook，用于执行截图
+  const {handleSave: executeSave, isSaving} = useSaveToCameraRoll(
+    highResCaptureRef,
+    exportSettings,
+  );
+
+  // 控制导出组件的按需挂载
+  const [isMountingExport, setIsMountingExport] = useState(false);
+
+  // 1. 用户点击保存 -> 开始挂载隐藏的高清组件
+  const handleUserSave = useCallback(() => {
+    setIsMountingExport(true);
+  }, []);
+
+  // 2. 高清组件布局完成 -> 执行截图 -> 卸载组件
+  const handleExportReady = useCallback(async () => {
+    // 稍微延迟一帧以确保渲染完全提交（保险起见）
+    setTimeout(async () => {
+      await executeSave();
+      setIsMountingExport(false);
+    }, 50);
+  }, [executeSave]);
+
+  // 组合加载状态
+  const isProcessing = isSaving || isMountingExport;
+
   const framePadding = Math.max(0, settings.padding);
 
   const effectiveImageAspectRatio = useMemo(() => {
-    if (!imageAspectRatio) return 1;
+    if (!imageAspectRatio) {
+      return 1;
+    }
     const isRotated = cropControls.cropRotation % 180 !== 0;
     const contentRatio = isRotated ? 1 / imageAspectRatio : imageAspectRatio;
     return (
@@ -72,15 +121,6 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
         return effectiveImageAspectRatio;
     }
   }, [effectiveImageAspectRatio, settings.aspectRatio]);
-
-  const captureOptions = useMemo(() => {
-    const format = (settings.exportFormat === 'jpeg' ? 'jpg' : 'png') as
-      | 'jpg'
-      | 'png';
-    const quality =
-      settings.exportFormat === 'jpeg' ? settings.exportQuality : 1;
-    return {format, quality, result: 'tmpfile' as const};
-  }, [settings.exportFormat, settings.exportQuality]);
 
   const updateSettings = useCallback(
     <K extends keyof FrameSettings>(key: K, value: FrameSettings[K]) => {
@@ -144,8 +184,7 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
               settings={settings}
               previewAspectRatio={previewAspectRatio}
               framePadding={framePadding}
-              captureOptions={captureOptions}
-              viewShotRef={viewShotRef}
+              captureRef={previewCaptureRef}
               onInfoOffsetChange={updateInfoOffset}
               cropRect={cropControls.cropRect}
               cropRotation={cropControls.cropRotation}
@@ -162,12 +201,27 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
           updateSettings={updateSettings}
           cropControls={cropControls}
           onResetInfo={resetInfoSettings}
-          onSave={handleSave}
-          isSaving={isSaving}
+          onSave={handleUserSave} // 绑定新的处理函数
+          isSaving={isProcessing} // 使用组合状态
         />
       </SafeAreaView>
 
       <BottomTabs activeTab={activeTab} onTabChange={handleTabChange} />
+
+      {/* 按需渲染：平时不挂载，点击保存才挂载，用完即焚 */}
+      {isMountingExport && (
+        <HighResExport
+          imageUri={imageUri}
+          settings={settings}
+          exportScale={settings.exportScale}
+          previewAspectRatio={previewAspectRatio}
+          cropRect={cropControls.cropRect}
+          cropRotation={cropControls.cropRotation}
+          cropFlip={cropControls.cropFlip}
+          captureRef={highResCaptureRef}
+          onReady={handleExportReady}
+        />
+      )}
     </View>
   );
 }

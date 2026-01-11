@@ -24,14 +24,14 @@ export interface SegmentedOption<T> {
   label: string;
 }
 
-interface SegmentedControlProps<T extends string> {
+interface SegmentedControlProps<T extends string | number> {
   options: ReadonlyArray<SegmentedOption<T>>;
   value: T;
   onChange: (value: T) => void;
   label?: string;
 }
 
-export default function SegmentedControl<T extends string>({
+export default function SegmentedControl<T extends string | number>({
   options,
   value,
   onChange,

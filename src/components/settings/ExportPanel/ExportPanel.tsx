@@ -2,9 +2,9 @@
  * @Author: wjm 791215714@qq.com
  * @Date: 2026-01-11 22:33:08
  * @LastEditors: wjm 791215714@qq.com
- * @LastEditTime: 2026-01-12 00:22:50
+ * @LastEditTime: 2026-01-12 04:49:18
  * @FilePath: /code/lens-border-rn/src/components/settings/ExportPanel/ExportPanel.tsx
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @Description: 导出设置面板 - 支持高分辨率无损导出
  */
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
@@ -17,6 +17,13 @@ import type {FrameSettings} from '../../../types';
 const EXPORT_FORMAT_OPTIONS = [
   {id: 'png' as const, label: 'PNG'},
   {id: 'jpeg' as const, label: 'JPEG'},
+];
+
+const EXPORT_SCALE_OPTIONS = [
+  {id: 1, label: '1x'},
+  {id: 2, label: '2x'},
+  {id: 3, label: '3x'},
+  {id: 4, label: '4x'},
 ];
 
 interface ExportPanelProps {
@@ -38,6 +45,10 @@ export default function ExportPanel({
   const isDisabled = isSaving || !onSave;
   const buttonLabel = isSaving ? '保存中...' : '保存到相册';
 
+  // 计算预估导出尺寸
+  const estimatedWidth = 400 * settings.exportScale;
+  const scaleLabel = `${settings.exportScale}x (约 ${estimatedWidth}px 宽)`;
+
   return (
     <View style={styles.container}>
       <SegmentedControl<FrameSettings['exportFormat']>
@@ -46,6 +57,17 @@ export default function ExportPanel({
         value={settings.exportFormat}
         onChange={val => updateSettings('exportFormat', val)}
       />
+
+      <SegmentedControl<number>
+        label="导出分辨率"
+        options={EXPORT_SCALE_OPTIONS}
+        value={settings.exportScale}
+        onChange={val => updateSettings('exportScale', val)}
+      />
+
+      <View style={styles.scaleHint}>
+        <Text style={styles.scaleHintText}>{scaleLabel}</Text>
+      </View>
 
       {settings.exportFormat === 'jpeg' && (
         <Slider
@@ -68,8 +90,13 @@ export default function ExportPanel({
       </TouchableOpacity>
 
       <View style={styles.hintBox}>
-        <Text style={styles.hintTitle}>Export Options</Text>
-        <Text style={styles.hintText}>支持高分辨率无损导出</Text>
+        <Text style={styles.hintTitle}>导出说明</Text>
+        <Text style={styles.hintText}>
+          {settings.exportFormat === 'png'
+            ? 'PNG 格式无损导出，文件较大'
+            : `JPEG 质量 ${Math.round(settings.exportQuality * 100)}%`}
+        </Text>
+        <Text style={styles.hintText}>分辨率越高，图片越清晰，文件越大</Text>
       </View>
     </View>
   );
@@ -111,5 +138,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 10,
     color: colors.textMuted,
+  },
+  scaleHint: {
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  scaleHintText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    opacity: 0.8,
   },
 });

@@ -13,6 +13,7 @@ interface InfoOverlayProps {
   settings: FrameSettings;
   framePadding: number;
   onOffsetChange: (offset: {x: number; y: number}) => void;
+  baseBottom?: number;
 }
 
 const DEFAULT_INFO = {
@@ -37,6 +38,7 @@ export default function InfoOverlay({
   settings,
   framePadding,
   onOffsetChange,
+  baseBottom = 12,
 }: InfoOverlayProps) {
   const offsetRef = useRef(settings.infoOffset);
   const dragStartRef = useRef(settings.infoOffset);
@@ -63,13 +65,12 @@ export default function InfoOverlay({
     [onOffsetChange],
   );
 
-  if (!settings.showExif) {
-    return null;
-  }
-
   const model = resolveInfoText(settings.customExif.model, DEFAULT_INFO.model);
   const lens = resolveInfoText(settings.customExif.lens, DEFAULT_INFO.lens);
-  const params = resolveInfoText(settings.customExif.params, DEFAULT_INFO.params);
+  const params = resolveInfoText(
+    settings.customExif.params,
+    DEFAULT_INFO.params,
+  );
   const date = resolveInfoText(settings.customExif.date, DEFAULT_INFO.date);
 
   const line1Style = useMemo(
@@ -112,6 +113,10 @@ export default function InfoOverlay({
     ],
   );
 
+  if (!settings.showExif) {
+    return null;
+  }
+
   return (
     <View
       style={[
@@ -119,6 +124,7 @@ export default function InfoOverlay({
         {
           left: framePadding,
           right: framePadding,
+          bottom: baseBottom,
           transform: [
             {translateX: settings.infoOffset.x},
             {translateY: settings.infoOffset.y},
@@ -158,7 +164,7 @@ export default function InfoOverlay({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 12,
+    // bottom: 12,
   },
   centeredBlock: {
     alignItems: 'center',
