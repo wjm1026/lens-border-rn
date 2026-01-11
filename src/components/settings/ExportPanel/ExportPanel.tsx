@@ -1,5 +1,13 @@
+/*
+ * @Author: wjm 791215714@qq.com
+ * @Date: 2026-01-11 22:33:08
+ * @LastEditors: wjm 791215714@qq.com
+ * @LastEditTime: 2026-01-12 00:22:50
+ * @FilePath: /code/lens-border-rn/src/components/settings/ExportPanel/ExportPanel.tsx
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 
 import {colors} from '../../../theme';
 import {Slider} from '../../ui/Slider';
@@ -17,11 +25,13 @@ interface ExportPanelProps {
     key: K,
     value: FrameSettings[K],
   ) => void;
+  onSave?: () => void;
 }
 
 export default function ExportPanel({
   settings,
   updateSettings,
+  onSave,
 }: ExportPanelProps) {
   return (
     <View style={styles.container}>
@@ -44,6 +54,13 @@ export default function ExportPanel({
         />
       )}
 
+      <TouchableOpacity
+        style={styles.saveButton}
+        onPress={onSave}
+        activeOpacity={0.8}>
+        <Text style={styles.saveButtonText}>保存到相册</Text>
+      </TouchableOpacity>
+
       <View style={styles.hintBox}>
         <Text style={styles.hintTitle}>Export Options</Text>
         <Text style={styles.hintText}>支持高分辨率无损导出</Text>
@@ -55,6 +72,19 @@ export default function ExportPanel({
 const styles = StyleSheet.create({
   container: {
     paddingTop: 4,
+  },
+  saveButton: {
+    marginTop: 16,
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   hintBox: {
     marginTop: 12,

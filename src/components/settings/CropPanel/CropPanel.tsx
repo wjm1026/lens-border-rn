@@ -9,7 +9,10 @@ import {
 
 import {colors} from '../../../theme';
 import {Slider} from '../../ui/Slider';
-import {SegmentedControl, type SegmentedOption} from '../../ui/SegmentedControl';
+import {
+  SegmentedControl,
+  type SegmentedOption,
+} from '../../ui/SegmentedControl';
 
 export type CropAspectId = 'free' | '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
 
@@ -26,6 +29,7 @@ interface CropPanelProps {
   aspectId: CropAspectId;
   onAspectChange: (id: CropAspectId) => void;
   zoom: number;
+  minZoom?: number;
   onZoomChange: (value: number) => void;
   rotation: number;
   onRotationChange: (value: number) => void;
@@ -38,6 +42,7 @@ export default function CropPanel({
   aspectId,
   onAspectChange,
   zoom,
+  minZoom = 1,
   onZoomChange,
   rotation,
   onRotationChange,
@@ -59,8 +64,8 @@ export default function CropPanel({
       <Slider
         label="缩放"
         value={zoom}
-        min={1}
-        max={3}
+        min={minZoom}
+        max={Math.max(minZoom + 2, 3)}
         step={0.1}
         onChange={onZoomChange}
         unit="x"
@@ -101,7 +106,10 @@ export default function CropPanel({
             flip.horizontal && styles.flipButtonActive,
           ]}
           onPress={() =>
-            onFlipChange({horizontal: !flip.horizontal, vertical: flip.vertical})
+            onFlipChange({
+              horizontal: !flip.horizontal,
+              vertical: flip.vertical,
+            })
           }
           activeOpacity={0.7}>
           <FlipHorizontal
@@ -119,7 +127,10 @@ export default function CropPanel({
         <TouchableOpacity
           style={[styles.flipButton, flip.vertical && styles.flipButtonActive]}
           onPress={() =>
-            onFlipChange({horizontal: flip.horizontal, vertical: !flip.vertical})
+            onFlipChange({
+              horizontal: flip.horizontal,
+              vertical: !flip.vertical,
+            })
           }
           activeOpacity={0.7}>
           <FlipVertical

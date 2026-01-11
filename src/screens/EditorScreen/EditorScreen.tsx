@@ -2,22 +2,20 @@
  * @Author: wjm 791215714@qq.com
  * @Date: 2026-01-11 19:34:41
  * @LastEditors: wjm 791215714@qq.com
- * @LastEditTime: 2026-01-11 20:38:58
+ * @LastEditTime: 2026-01-12 00:33:39
  * @FilePath: /lens-border-rn/src/screens/EditorScreen/EditorScreen.tsx
  * @Description: 照片编辑主屏幕
  */
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  Alert,
   Image,
   LayoutChangeEvent,
+  Linking,
   PanResponder,
   Pressable,
+  PermissionsAndroid,
+  Platform,
   StatusBar,
   Text,
   TouchableOpacity,
@@ -26,6 +24,8 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ChevronLeft, Trash2} from 'lucide-react-native';
+import ViewShot from 'react-native-view-shot';
+import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 
 import {
   BottomTabs,
@@ -55,6 +55,8 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [settings, setSettings] = useState<FrameSettings>(DEFAULT_SETTINGS);
   const [imageAspectRatio, setImageAspectRatio] = useState(3 / 2);
+
+  // 裁切相关状态（只保留UI状态，暂无功能实现）
   const [cropAspect, setCropAspect] = useState<CropAspectId>('free');
   const [cropZoom, setCropZoom] = useState(1);
   const [cropRotation, setCropRotation] = useState(0);
@@ -62,40 +64,15 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
     horizontal: false,
     vertical: false,
   });
-  const [cropOffset, setCropOffset] = useState({x: 0, y: 0});
-  const [cropRect, setCropRect] = useState({
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-  });
-  const [viewportSize, setViewportSize] = useState({width: 0, height: 0});
-  const cropOffsetRef = useRef(cropOffset);
-  const panStartRef = useRef({x: 0, y: 0});
-  const cropRectRef = useRef(cropRect);
-  const resizeStartRef = useRef(cropRect);
-  const isResizingRef = useRef(false);
+
+  const viewShotRef = useRef<ViewShot | null>(null);
   const {width} = useWindowDimensions();
   const framePadding = Math.max(0, settings.padding);
   const [previewAreaSize, setPreviewAreaSize] = useState({width: 0, height: 0});
-  const cropAspectRatio = useMemo(() => {
-    switch (cropAspect) {
-      case '1:1':
-        return 1;
-      case '4:3':
-        return 4 / 3;
-      case '3:4':
-        return 3 / 4;
-      case '16:9':
-        return 16 / 9;
-      case '9:16':
-        return 9 / 16;
-      case 'free':
-      default:
-        return undefined;
-    }
-  }, [cropAspect]);
-  const isCropActive = activeTab === 'crop';
+
+  // 最小缩放值
+  const minZoom = 1;
+
   const previewAspectRatio = useMemo(() => {
     switch (settings.aspectRatio) {
       case 'square':
@@ -109,10 +86,12 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
         return imageAspectRatio;
     }
   }, [imageAspectRatio, settings.aspectRatio]);
+
   const styles = useMemo(
     () => createStyles(framePadding, settings.showExif),
     [framePadding, settings.showExif],
   );
+
   const previewViewportSize = useMemo(() => {
     const baseWidth = previewAreaSize.width || width;
     const baseHeight = previewAreaSize.height || 0;
@@ -135,6 +114,7 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
     settings.showExif,
     width,
   ]);
+
   const imageShadowStyle = useMemo(() => {
     const shadowSize = Math.max(0, settings.shadowSize);
     const shadowOpacity = shadowSize > 0 ? settings.shadowOpacity : 0;
@@ -147,6 +127,7 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
       elevation: shadowSize > 0 ? Math.round(shadowSize) : 0,
     };
   }, [settings.borderRadius, settings.shadowOpacity, settings.shadowSize]);
+
   const imageBorderStyle = useMemo(
     () => ({
       borderRadius: Math.max(0, settings.borderRadius),
@@ -156,70 +137,16 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
     [settings.borderColor, settings.borderRadius, settings.borderWidth],
   );
 
-  const baseImageSize = useMemo(() => {
-    if (viewportSize.width <= 0 || viewportSize.height <= 0) {
-      return {width: 0, height: 0};
-    }
-    const viewRatio = viewportSize.width / viewportSize.height;
-    if (imageAspectRatio > viewRatio) {
-      return {
-        width: viewportSize.height * imageAspectRatio,
-        height: viewportSize.height,
-      };
-    }
-    return {
-      width: viewportSize.width,
-      height: viewportSize.width / imageAspectRatio,
-    };
-  }, [imageAspectRatio, viewportSize.height, viewportSize.width]);
+  const captureOptions = useMemo(() => {
+    const format = (settings.exportFormat === 'jpeg' ? 'jpg' : 'png') as
+      | 'jpg'
+      | 'png';
+    const quality =
+      settings.exportFormat === 'jpeg' ? settings.exportQuality : 1;
+    return {format, quality, result: 'tmpfile' as const};
+  }, [settings.exportFormat, settings.exportQuality]);
 
-  const clampOffset = useCallback(
-    (nextOffset: {x: number; y: number}) => {
-      const displayWidth =
-        isCropActive && cropRect.width > 0 ? cropRect.width : viewportSize.width;
-      const displayHeight =
-        isCropActive && cropRect.height > 0
-          ? cropRect.height
-          : viewportSize.height;
-      if (displayWidth <= 0 || displayHeight <= 0) {
-        return {x: 0, y: 0};
-      }
-      if (baseImageSize.width <= 0 || baseImageSize.height <= 0) {
-        return {x: 0, y: 0};
-      }
-      const maxX = Math.max(
-        0,
-        (baseImageSize.width * cropZoom - displayWidth) / 2,
-      );
-      const maxY = Math.max(
-        0,
-        (baseImageSize.height * cropZoom - displayHeight) / 2,
-      );
-      return {
-        x: Math.max(-maxX, Math.min(maxX, nextOffset.x)),
-        y: Math.max(-maxY, Math.min(maxY, nextOffset.y)),
-      };
-    },
-    [
-      baseImageSize.height,
-      baseImageSize.width,
-      cropRect.height,
-      cropRect.width,
-      cropZoom,
-      isCropActive,
-      viewportSize.height,
-      viewportSize.width,
-    ],
-  );
-
-  useEffect(() => {
-    cropOffsetRef.current = cropOffset;
-  }, [cropOffset]);
-
-  useEffect(() => {
-    cropRectRef.current = cropRect;
-  }, [cropRect]);
-
+  // 获取图片比例
   useEffect(() => {
     let isActive = true;
     Image.getSize(
@@ -243,16 +170,13 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
     };
   }, [imageUri]);
 
+  // 重置裁切状态
   useEffect(() => {
-    if (viewportSize.width <= 0 || viewportSize.height <= 0) {
-      return;
-    }
-    setCropOffset(prev => clampOffset(prev));
-  }, [clampOffset, viewportSize.height, viewportSize.width]);
-
-  useEffect(() => {
-    setCropOffset({x: 0, y: 0});
-  }, [cropAspect, imageUri]);
+    setCropZoom(1);
+    setCropRotation(0);
+    setCropFlip({horizontal: false, vertical: false});
+    setCropAspect('free');
+  }, [imageUri]);
 
   const updateSettings = useCallback(
     <K extends keyof FrameSettings>(key: K, value: FrameSettings[K]) => {
@@ -261,16 +185,8 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
     [],
   );
 
-  const handleViewportLayout = useCallback((event: LayoutChangeEvent) => {
-    const {width: layoutWidth, height: layoutHeight} =
-      event.nativeEvent.layout;
-    if (layoutWidth > 0 && layoutHeight > 0) {
-      setViewportSize({width: layoutWidth, height: layoutHeight});
-    }
-  }, []);
   const handlePreviewAreaLayout = useCallback((event: LayoutChangeEvent) => {
-    const {width: layoutWidth, height: layoutHeight} =
-      event.nativeEvent.layout;
+    const {width: layoutWidth, height: layoutHeight} = event.nativeEvent.layout;
     if (layoutWidth > 0 && layoutHeight > 0) {
       setPreviewAreaSize(prev =>
         prev.width === layoutWidth && prev.height === layoutHeight
@@ -280,6 +196,7 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
     }
   }, []);
 
+  // 裁切面板回调（暂时只更新UI状态，无实际功能）
   const handleRotateStep = useCallback((delta: number) => {
     setCropRotation(prev => {
       const next = (prev + delta) % 360;
@@ -287,241 +204,10 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
     });
   }, []);
 
-  const getCenteredCropRect = useCallback(
-    (ratio?: number) => {
-      const {width: viewportWidth, height: viewportHeight} = viewportSize;
-      if (viewportWidth <= 0 || viewportHeight <= 0) {
-        return {x: 0, y: 0, width: 0, height: 0};
-      }
-      if (!ratio) {
-        return {
-          x: 0,
-          y: 0,
-          width: viewportWidth,
-          height: viewportHeight,
-        };
-      }
-      let width = viewportWidth;
-      let height = width / ratio;
-      if (height > viewportHeight) {
-        height = viewportHeight;
-        width = height * ratio;
-      }
-      return {
-        x: (viewportWidth - width) / 2,
-        y: (viewportHeight - height) / 2,
-        width,
-        height,
-      };
-    },
-    [viewportSize],
-  );
-
-  const clampCropRect = useCallback(
-    (
-      rect: {x: number; y: number; width: number; height: number},
-      ratio?: number,
-    ) => {
-      const minSize = 80;
-      const {width: viewportWidth, height: viewportHeight} = viewportSize;
-      if (viewportWidth <= 0 || viewportHeight <= 0) {
-        return rect;
-      }
-      let {x, y, width, height} = rect;
-      if (ratio) {
-        width = Math.max(minSize, width);
-        height = width / ratio;
-        if (height < minSize) {
-          height = minSize;
-          width = height * ratio;
-        }
-        if (width > viewportWidth) {
-          width = viewportWidth;
-          height = width / ratio;
-        }
-        if (height > viewportHeight) {
-          height = viewportHeight;
-          width = height * ratio;
-        }
-      } else {
-        width = Math.max(minSize, Math.min(width, viewportWidth));
-        height = Math.max(minSize, Math.min(height, viewportHeight));
-      }
-      x = Math.max(0, Math.min(x, viewportWidth - width));
-      y = Math.max(0, Math.min(y, viewportHeight - height));
-      return {x, y, width, height};
-    },
-    [viewportSize],
-  );
-
-  const getResizedRect = useCallback(
-    (
-      handle: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight',
-      dx: number,
-      dy: number,
-      startRect: {x: number; y: number; width: number; height: number},
-    ) => {
-      const ratio = cropAspectRatio;
-      const isLeft = handle === 'topLeft' || handle === 'bottomLeft';
-      const isRight = handle === 'topRight' || handle === 'bottomRight';
-      const isTop = handle === 'topLeft' || handle === 'topRight';
-      const isBottom = handle === 'bottomLeft' || handle === 'bottomRight';
-
-      let {x, y, width, height} = startRect;
-
-      if (!ratio) {
-        if (isLeft) {
-          x += dx;
-          width -= dx;
-        }
-        if (isRight) {
-          width += dx;
-        }
-        if (isTop) {
-          y += dy;
-          height -= dy;
-        }
-        if (isBottom) {
-          height += dy;
-        }
-        return clampCropRect({x, y, width, height});
-      }
-
-      const deltaX = isLeft ? -dx : dx;
-      const deltaY = isTop ? -dy : dy;
-      const useX = Math.abs(deltaX) >= Math.abs(deltaY);
-      let nextWidth = width;
-      let nextHeight = height;
-      if (useX) {
-        nextWidth = width + deltaX;
-        nextHeight = nextWidth / ratio;
-      } else {
-        nextHeight = height + deltaY;
-        nextWidth = nextHeight * ratio;
-      }
-      if (isLeft) {
-        x = x + (width - nextWidth);
-      }
-      if (isTop) {
-        y = y + (height - nextHeight);
-      }
-      return clampCropRect({x, y, width: nextWidth, height: nextHeight}, ratio);
-    },
-    [clampCropRect, cropAspectRatio],
-  );
-
-  useEffect(() => {
-    if (!isCropActive) {
-      return;
-    }
-    if (viewportSize.width <= 0 || viewportSize.height <= 0) {
-      return;
-    }
-    if (cropAspectRatio) {
-      setCropRect(getCenteredCropRect(cropAspectRatio));
-      return;
-    }
-    setCropRect(prev => {
-      if (prev.width <= 0 || prev.height <= 0) {
-        return getCenteredCropRect();
-      }
-      return clampCropRect(prev);
-    });
-  }, [
-    clampCropRect,
-    cropAspectRatio,
-    getCenteredCropRect,
-    imageUri,
-    isCropActive,
-    viewportSize.height,
-    viewportSize.width,
-  ]);
-
-  const imagePanResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () =>
-          isCropActive && !isResizingRef.current,
-        onMoveShouldSetPanResponder: () =>
-          isCropActive && !isResizingRef.current,
-        onPanResponderGrant: () => {
-          panStartRef.current = cropOffsetRef.current;
-        },
-        onPanResponderMove: (_evt, gestureState) => {
-          const nextOffset = {
-            x: panStartRef.current.x + gestureState.dx,
-            y: panStartRef.current.y + gestureState.dy,
-          };
-          setCropOffset(clampOffset(nextOffset));
-        },
-      }),
-    [clampOffset, isCropActive],
-  );
-
-  const resizeHandlers = useMemo(() => {
-    const createResponder = (
-      handle: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight',
-    ) =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => isCropActive,
-        onMoveShouldSetPanResponder: () => isCropActive,
-        onPanResponderGrant: () => {
-          isResizingRef.current = true;
-          resizeStartRef.current = cropRectRef.current;
-        },
-        onPanResponderMove: (_evt, gestureState) => {
-          const nextRect = getResizedRect(
-            handle,
-            gestureState.dx,
-            gestureState.dy,
-            resizeStartRef.current,
-          );
-          setCropRect(nextRect);
-        },
-        onPanResponderRelease: () => {
-          isResizingRef.current = false;
-        },
-        onPanResponderTerminate: () => {
-          isResizingRef.current = false;
-        },
-      });
-
-    return {
-      topLeft: createResponder('topLeft'),
-      topRight: createResponder('topRight'),
-      bottomLeft: createResponder('bottomLeft'),
-      bottomRight: createResponder('bottomRight'),
-    };
-  }, [getResizedRect, isCropActive]);
-
-  const imagePanHandlers = useMemo(
-    () => (isCropActive ? imagePanResponder.panHandlers : {}),
-    [imagePanResponder.panHandlers, isCropActive],
-  );
-
-  const imageTransform = useMemo(() => {
-    const scaleX = cropZoom * (cropFlip.horizontal ? -1 : 1);
-    const scaleY = cropZoom * (cropFlip.vertical ? -1 : 1);
-    return {
-      transform: [
-        {scaleX},
-        {scaleY},
-        {rotate: `${cropRotation}deg`},
-        {translateX: cropOffset.x},
-        {translateY: cropOffset.y},
-      ],
-    };
-  }, [cropFlip.horizontal, cropFlip.vertical, cropOffset, cropRotation, cropZoom]);
-  const showCropOverlay =
-    isCropActive && cropRect.width > 0 && cropRect.height > 0;
-  const cropOutlineStyle =
-    isCropActive && settings.borderWidth === 0
-      ? styles.cropViewportActive
-      : null;
-  const handleHitSlop = {top: 12, bottom: 12, left: 12, right: 12};
   const updateInfoOffset = useCallback((nextOffset: {x: number; y: number}) => {
     setSettings(prev => ({...prev, infoOffset: nextOffset}));
   }, []);
+
   const resetInfoSettings = useCallback(() => {
     setSettings(prev => ({
       ...prev,
@@ -538,20 +224,79 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
     }));
   }, []);
 
+  const requestAndroidSavePermission = useCallback(async () => {
+    if (Platform.OS !== 'android') {
+      return true;
+    }
+    if (Platform.Version >= 29) {
+      return true;
+    }
+    const permission = PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE;
+    const hasPermission = await PermissionsAndroid.check(permission);
+    if (hasPermission) {
+      return true;
+    }
+    const status = await PermissionsAndroid.request(permission, {
+      title: '存储权限',
+      message: '需要存储权限以保存图片到相册。',
+      buttonPositive: '允许',
+      buttonNegative: '取消',
+    });
+    return status === PermissionsAndroid.RESULTS.GRANTED;
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    const hasPermission = await requestAndroidSavePermission();
+    if (!hasPermission) {
+      Alert.alert('保存失败', '没有存储权限，无法保存到相册。');
+      return;
+    }
+    if (!viewShotRef.current) {
+      Alert.alert('保存失败', '未能获取预览内容。');
+      return;
+    }
+    try {
+      if (!viewShotRef.current?.capture) {
+        Alert.alert('保存失败', '截图功能不可用，请重试。');
+        return;
+      }
+      const uri = await viewShotRef.current.capture();
+      if (!uri) {
+        Alert.alert('保存失败', '生成图片失败，请重试。');
+        return;
+      }
+      const normalizedUri = uri.startsWith('file://') ? uri : `file://${uri}`;
+      await CameraRoll.saveAsset(normalizedUri, {type: 'photo'});
+      Alert.alert('已保存', '图片已保存到相册。');
+    } catch (error) {
+      const err = error as {code?: string; message?: string};
+      const message =
+        typeof err?.message === 'string' && err.message.length > 0
+          ? err.message
+          : '保存过程中出错，请稍后重试。';
+      if (
+        err?.code === 'E_PHOTO_LIBRARY_AUTH_DENIED' ||
+        err?.code === 'E_PHOTO_LIBRARY_AUTH_RESTRICTED'
+      ) {
+        Alert.alert('保存失败', '相册权限被拒绝，请在系统设置中开启。', [
+          {text: '取消', style: 'cancel'},
+          {text: '去设置', onPress: () => Linking.openSettings()},
+        ]);
+        return;
+      }
+      Alert.alert('保存失败', message);
+    }
+  }, [requestAndroidSavePermission]);
+
   const handleTabChange = useCallback(
     (nextTab: TabId) => {
-      setIsPanelOpen(prevOpen =>
-        activeTab === nextTab ? !prevOpen : true,
-      );
+      setIsPanelOpen(prevOpen => (activeTab === nextTab ? !prevOpen : true));
       setActiveTab(nextTab);
     },
     [activeTab],
   );
 
   const renderSettingsPanel = () => {
-    if (!isPanelOpen) {
-      return null;
-    }
     let panelContent: React.ReactNode = null;
     switch (activeTab) {
       case 'layout':
@@ -565,6 +310,7 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
             aspectId={cropAspect}
             onAspectChange={setCropAspect}
             zoom={cropZoom}
+            minZoom={minZoom}
             onZoomChange={setCropZoom}
             rotation={cropRotation}
             onRotationChange={setCropRotation}
@@ -581,7 +327,10 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
         break;
       case 'bg':
         panelContent = (
-          <BackgroundPanel settings={settings} updateSettings={updateSettings} />
+          <BackgroundPanel
+            settings={settings}
+            updateSettings={updateSettings}
+          />
         );
         break;
       case 'info':
@@ -595,7 +344,11 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
         break;
       case 'export':
         panelContent = (
-          <ExportPanel settings={settings} updateSettings={updateSettings} />
+          <ExportPanel
+            settings={settings}
+            updateSettings={updateSettings}
+            onSave={handleSave}
+          />
         );
         break;
       default:
@@ -606,11 +359,15 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
     }
     return (
       <>
-        <Pressable
-          style={styles.panelDismissOverlay}
-          onPress={() => setIsPanelOpen(false)}
-        />
-        <FloatingPanel>{panelContent}</FloatingPanel>
+        {isPanelOpen && (
+          <Pressable
+            style={styles.panelDismissOverlay}
+            onPress={() => setIsPanelOpen(false)}
+          />
+        )}
+        <FloatingPanel visible={isPanelOpen} contentKey={activeTab}>
+          {panelContent}
+        </FloatingPanel>
       </>
     );
   };
@@ -632,7 +389,10 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
 
         {/* Image Preview Container */}
         <View style={styles.previewArea} onLayout={handlePreviewAreaLayout}>
-          <View style={styles.imageFrame}>
+          <ViewShot
+            ref={viewShotRef}
+            style={styles.imageFrame}
+            options={captureOptions}>
             <BackgroundLayer settings={settings} imageUri={imageUri} />
             <View
               style={[
@@ -643,98 +403,12 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
                   height: previewViewportSize.height,
                 },
               ]}>
-              <View
-                style={[styles.imageViewport, imageBorderStyle, cropOutlineStyle]}
-                onLayout={handleViewportLayout}>
+              <View style={[styles.imageViewport, imageBorderStyle]}>
                 <Image
                   source={{uri: imageUri}}
-                  style={[styles.previewImage, imageTransform]}
+                  style={styles.previewImage}
                   resizeMode="cover"
-                  {...imagePanHandlers}
                 />
-                {showCropOverlay && (
-                  <>
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.cropMask,
-                        {left: 0, right: 0, top: 0, height: cropRect.y},
-                      ]}
-                    />
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.cropMask,
-                        {
-                          left: 0,
-                          top: cropRect.y,
-                          width: cropRect.x,
-                          height: cropRect.height,
-                        },
-                      ]}
-                    />
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.cropMask,
-                        {
-                          left: cropRect.x + cropRect.width,
-                          right: 0,
-                          top: cropRect.y,
-                          height: cropRect.height,
-                        },
-                      ]}
-                    />
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.cropMask,
-                        {
-                          left: 0,
-                          right: 0,
-                          top: cropRect.y + cropRect.height,
-                          bottom: 0,
-                        },
-                      ]}
-                    />
-                    <View
-                      pointerEvents="box-none"
-                      style={[
-                        styles.cropBox,
-                        {
-                          left: cropRect.x,
-                          top: cropRect.y,
-                          width: cropRect.width,
-                          height: cropRect.height,
-                        },
-                      ]}>
-                      <View
-                        pointerEvents="none"
-                        style={styles.cropBoxBorder}
-                      />
-                      <View
-                        style={[styles.cropHandle, styles.cropHandleTopLeft]}
-                        hitSlop={handleHitSlop}
-                        {...resizeHandlers.topLeft.panHandlers}
-                      />
-                      <View
-                        style={[styles.cropHandle, styles.cropHandleTopRight]}
-                        hitSlop={handleHitSlop}
-                        {...resizeHandlers.topRight.panHandlers}
-                      />
-                      <View
-                        style={[styles.cropHandle, styles.cropHandleBottomLeft]}
-                        hitSlop={handleHitSlop}
-                        {...resizeHandlers.bottomLeft.panHandlers}
-                      />
-                      <View
-                        style={[styles.cropHandle, styles.cropHandleBottomRight]}
-                        hitSlop={handleHitSlop}
-                        {...resizeHandlers.bottomRight.panHandlers}
-                      />
-                    </View>
-                  </>
-                )}
               </View>
             </View>
             <InfoOverlay
@@ -742,7 +416,7 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
               framePadding={framePadding}
               onOffsetChange={updateInfoOffset}
             />
-          </View>
+          </ViewShot>
         </View>
 
         {renderSettingsPanel()}
