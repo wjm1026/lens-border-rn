@@ -1,0 +1,72 @@
+import React, {useCallback} from 'react';
+import {Alert, StatusBar, Text, TouchableOpacity, View} from 'react-native';
+import {Upload} from 'lucide-react-native';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {SafeAreaView} from 'react-native-safe-area-context';
+
+import {colors} from '../../theme';
+import {styles} from './styles';
+
+interface LaunchScreenProps {
+  onImagePicked: (uri: string) => void;
+}
+
+export default function LaunchScreen({onImagePicked}: LaunchScreenProps) {
+  const handlePicker = useCallback(async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        includeExtra: true,
+        selectionLimit: 1,
+      });
+
+      if (result.didCancel) {
+        return;
+      }
+
+      if (result.errorCode) {
+        Alert.alert(
+          '选择失败',
+          result.errorMessage ?? '请检查相册权限后重试。',
+        );
+        return;
+      }
+
+      const selectedUri = result.assets?.[0]?.uri;
+
+      if (selectedUri) {
+        onImagePicked(selectedUri);
+      }
+    } catch {
+      Alert.alert('选择失败', '请稍后重试。');
+    }
+  }, [onImagePicked]);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={colors.background}
+      />
+      <View style={styles.header}>
+        <Text style={styles.logoText}>
+          Lens<Text style={styles.logoHighlight}>Border</Text>
+        </Text>
+        <Text style={styles.subText}>打造专业级照片边框 & EXIF 数据展示</Text>
+      </View>
+
+      <TouchableOpacity
+        style={styles.uploadArea}
+        onPress={handlePicker}
+        activeOpacity={0.7}>
+        <View style={styles.uploadBox}>
+          <View style={styles.iconCircle}>
+            <Upload size={32} color={colors.accent} strokeWidth={2} />
+          </View>
+          <Text style={styles.uploadTitle}>点击上传照片</Text>
+          <Text style={styles.uploadHint}>支持 JPG, PNG, HEIC 格式</Text>
+        </View>
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+}
