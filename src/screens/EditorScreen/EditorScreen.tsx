@@ -32,7 +32,7 @@ interface EditorScreenProps {
 
 export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
   const [activeTab, setActiveTab] = useState<TabId>('layout');
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [settings, setSettings] = useState<FrameSettings>(DEFAULT_SETTINGS);
   const imageAspectRatio = useImageAspectRatio(imageUri);
   const cropControls = useCropControls(imageUri);

@@ -48,8 +48,10 @@ export default function FloatingPanel({
   const isFirstRender = useRef(true);
 
   // Animation values
-  const translateY = useRef(new Animated.Value(SLIDE_DISTANCE)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(
+    new Animated.Value(visible ? 0 : SLIDE_DISTANCE),
+  ).current;
+  const opacity = useRef(new Animated.Value(visible ? 1 : 0)).current;
   const contentOpacity = useRef(new Animated.Value(1)).current;
   const contentTranslateX = useRef(new Animated.Value(0)).current;
 
