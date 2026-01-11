@@ -8,11 +8,20 @@
  */
 export {default as BottomTabs} from './BottomTabs';
 export type {TabId} from './BottomTabs';
+export {BackgroundLayer} from './BackgroundLayer';
+export {InfoOverlay} from './InfoOverlay';
 
 // UI Components
 export {Slider} from './ui';
 export {SegmentedControl} from './ui';
+export {FloatingPanel} from './ui';
 export type {SegmentedOption} from './ui';
 
 // Settings Panels
 export {LayoutPanel} from './settings';
+export {CropPanel} from './settings';
+export {BorderPanel} from './settings';
+export {BackgroundPanel} from './settings';
+export {InfoPanel} from './settings';
+export {ExportPanel} from './settings';
+export type {CropAspectId} from './settings';

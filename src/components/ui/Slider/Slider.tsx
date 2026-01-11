@@ -6,7 +6,7 @@
  * @FilePath: /code/lens-border-rn/src/components/ui/Slider/Slider.tsx
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-import React, {useCallback, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef} from 'react';
 import {
   View,
   Text,
@@ -36,36 +36,86 @@ export default function Slider({
   onChange,
   unit = '',
 }: SliderProps) {
-  const trackWidth = useRef(0);
+  const trackRef = useRef<View>(null);
+  const trackLayout = useRef({left: 0, width: 0});
+  const onChangeRef = useRef(onChange);
 
-  const handleLayout = useCallback((event: LayoutChangeEvent) => {
-    trackWidth.current = event.nativeEvent.layout.width;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  const updateTrackLayout = useCallback(() => {
+    trackRef.current?.measureInWindow((left, _top, width) => {
+      if (width > 0) {
+        trackLayout.current = {left, width};
+      }
+    });
   }, []);
 
-  const calculateValue = useCallback(
-    (x: number) => {
-      const ratio = Math.max(0, Math.min(1, x / trackWidth.current));
-      const rawValue = min + ratio * (max - min);
-      const snappedValue = Math.round(rawValue / step) * step;
-      return Math.max(min, Math.min(max, snappedValue));
+  const handleLayout = useCallback(
+    (_event: LayoutChangeEvent) => {
+      updateTrackLayout();
     },
-    [min, max, step],
+    [updateTrackLayout],
   );
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: evt => {
-        const newValue = calculateValue(evt.nativeEvent.locationX);
-        onChange(newValue);
-      },
-      onPanResponderMove: evt => {
-        const newValue = calculateValue(evt.nativeEvent.locationX);
-        onChange(newValue);
-      },
-    }),
-  ).current;
+  const stepDecimals = useMemo(() => {
+    const stepString = step.toString();
+    const decimalIndex = stepString.indexOf('.');
+    return decimalIndex >= 0 ? stepString.length - decimalIndex - 1 : 0;
+  }, [step]);
+
+  const calculateValue = useCallback(
+    (pageX: number, layout = trackLayout.current) => {
+      if (layout.width <= 0) {
+        return min;
+      }
+      const ratio = Math.max(
+        0,
+        Math.min(1, (pageX - layout.left) / layout.width),
+      );
+      const rawValue = min + ratio * (max - min);
+      const snappedValue = Math.round(rawValue / step) * step;
+      const roundedValue =
+        stepDecimals > 0
+          ? Number(snappedValue.toFixed(stepDecimals))
+          : snappedValue;
+      return Math.max(min, Math.min(max, roundedValue));
+    },
+    [min, max, step, stepDecimals],
+  );
+
+  const updateValue = useCallback(
+    (pageX: number) => {
+      if (trackLayout.current.width <= 0) {
+        return;
+      }
+      const newValue = calculateValue(pageX);
+      onChangeRef.current(newValue);
+    },
+    [calculateValue],
+  );
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: evt => {
+          const pageX = evt.nativeEvent.pageX;
+          trackRef.current?.measureInWindow((left, _top, width) => {
+            if (width > 0) {
+              trackLayout.current = {left, width};
+              onChangeRef.current(calculateValue(pageX, {left, width}));
+            }
+          });
+        },
+        onPanResponderMove: (_evt, gestureState) => {
+          updateValue(gestureState.moveX);
+        },
+      }),
+    [calculateValue, updateValue],
+  );
 
   const percentage = ((value - min) / (max - min)) * 100;
 
@@ -80,6 +130,7 @@ export default function Slider({
       </View>
       <View
         style={styles.trackContainer}
+        ref={trackRef}
         onLayout={handleLayout}
         {...panResponder.panHandlers}>
         <View style={styles.track}>
