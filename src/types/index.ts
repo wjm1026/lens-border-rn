@@ -28,6 +28,13 @@ export interface LineStyle {
 export type AspectRatio = 'original' | 'square' | 'portrait' | 'landscape';
 export type CropAspectId = 'free' | '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
 
+export interface CropRect {
+  x: number; // 0-1 (normalized)
+  y: number; // 0-1
+  width: number; // 0-1
+  height: number; // 0-1
+}
+
 export interface FrameSettings {
   // 布局
   padding: number;

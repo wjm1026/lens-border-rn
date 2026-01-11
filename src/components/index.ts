@@ -12,6 +12,7 @@ export {BackgroundLayer} from './BackgroundLayer';
 export {EditorHeader} from './EditorHeader';
 export {ImagePreview} from './ImagePreview';
 export {InfoOverlay} from './InfoOverlay';
+export {Cropper} from './Cropper';
 
 // UI Components
 export {Slider} from './ui';

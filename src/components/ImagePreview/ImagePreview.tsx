@@ -9,7 +9,7 @@ import {
 import ViewShot from 'react-native-view-shot';
 
 import {colors} from '../../theme';
-import type {FrameSettings} from '../../types';
+import type {FrameSettings, CropRect} from '../../types';
 import {BackgroundLayer} from '../BackgroundLayer';
 import {InfoOverlay} from '../InfoOverlay';
 
@@ -27,6 +27,9 @@ interface ImagePreviewProps {
   };
   viewShotRef: React.RefObject<ViewShot>;
   onInfoOffsetChange: (offset: {x: number; y: number}) => void;
+  cropRect?: CropRect;
+  cropRotation?: number;
+  cropFlip?: {horizontal: boolean; vertical: boolean};
 }
 
 export default function ImagePreview({
@@ -37,6 +40,9 @@ export default function ImagePreview({
   captureOptions,
   viewShotRef,
   onInfoOffsetChange,
+  cropRect = {x: 0, y: 0, width: 1, height: 1},
+  cropRotation = 0,
+  cropFlip = {horizontal: false, vertical: false},
 }: ImagePreviewProps) {
   const {width} = useWindowDimensions();
   const [previewAreaSize, setPreviewAreaSize] = useState({
@@ -44,20 +50,16 @@ export default function ImagePreview({
     height: 0,
   });
 
-  const handlePreviewAreaLayout = useCallback(
-    (event: LayoutChangeEvent) => {
-      const {width: layoutWidth, height: layoutHeight} =
-        event.nativeEvent.layout;
-      if (layoutWidth > 0 && layoutHeight > 0) {
-        setPreviewAreaSize(prev =>
-          prev.width === layoutWidth && prev.height === layoutHeight
-            ? prev
-            : {width: layoutWidth, height: layoutHeight},
-        );
-      }
-    },
-    [],
-  );
+  const handlePreviewAreaLayout = useCallback((event: LayoutChangeEvent) => {
+    const {width: layoutWidth, height: layoutHeight} = event.nativeEvent.layout;
+    if (layoutWidth > 0 && layoutHeight > 0) {
+      setPreviewAreaSize(prev =>
+        prev.width === layoutWidth && prev.height === layoutHeight
+          ? prev
+          : {width: layoutWidth, height: layoutHeight},
+      );
+    }
+  }, []);
 
   const previewViewportSize = useMemo(() => {
     const baseWidth = previewAreaSize.width || width;
@@ -116,6 +118,14 @@ export default function ImagePreview({
     [framePadding, settings.showExif],
   );
 
+  // Math for Visual Crop Transform
+  const visualW = previewViewportSize.width / cropRect.width;
+  const visualH = previewViewportSize.height / cropRect.height;
+
+  const isRotated = cropRotation % 180 !== 0;
+  const imgStyleW = isRotated ? visualH : visualW;
+  const imgStyleH = isRotated ? visualW : visualH;
+
   return (
     <View style={styles.previewArea} onLayout={handlePreviewAreaLayout}>
       <ViewShot
@@ -134,11 +144,32 @@ export default function ImagePreview({
             },
           ]}>
           <View style={[styles.imageViewport, imageBorderStyle]}>
-            <Image
-              source={{uri: imageUri}}
-              style={styles.previewImage}
-              resizeMode="cover"
-            />
+            <View
+              style={{
+                width: visualW,
+                height: visualH,
+                marginLeft: -cropRect.x * visualW,
+                marginTop: -cropRect.y * visualH,
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+              <Image
+                source={{uri: imageUri}}
+                style={{
+                  width: imgStyleW,
+                  height: imgStyleH,
+                  left: (visualW - imgStyleW) / 2,
+                  top: (visualH - imgStyleH) / 2,
+                  position: 'absolute',
+                  transform: [
+                    {rotate: `${cropRotation}deg`},
+                    {scaleX: cropFlip.horizontal ? -1 : 1},
+                    {scaleY: cropFlip.vertical ? -1 : 1},
+                  ],
+                }}
+                resizeMode="stretch"
+              />
+            </View>
           </View>
         </View>
         <InfoOverlay
