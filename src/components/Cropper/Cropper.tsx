@@ -6,7 +6,12 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Image, PanResponder, StyleSheet, View} from 'react-native';
 
-import {DEFAULT_CROP_RECT, MAX_CROP_ZOOM, MIN_CROP_SIZE, MIN_CROP_ZOOM} from '../../config';
+import {
+  DEFAULT_CROP_RECT,
+  MAX_CROP_ZOOM,
+  MIN_CROP_SIZE,
+  MIN_CROP_ZOOM,
+} from '../../config';
 import type {CropRect} from '../../types';
 
 interface CropperProps {
@@ -288,10 +293,24 @@ export const Cropper: React.FC<CropperProps> = ({
           const touches = evt.nativeEvent.touches;
           const currentCropSize = stateRef.current.cropBoxSize;
 
-          if (touches.length === 2 && gestureRef.current.startDistance > 0) {
+          if (touches.length === 2) {
             const dx = touches[0].pageX - touches[1].pageX;
             const dy = touches[0].pageY - touches[1].pageY;
             const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // 如果是刚刚开始识别到双指，或者之前是单指模式，则初始化双指状态
+            if (
+              !gestureRef.current.isPinching ||
+              gestureRef.current.startDistance === 0
+            ) {
+              gestureRef.current.isPinching = true;
+              gestureRef.current.startDistance = distance;
+              gestureRef.current.startZoom = stateRef.current.zoom;
+              gestureRef.current.startOffset = {
+                ...stateRef.current.imageOffset,
+              };
+              return;
+            }
 
             const scale = distance / gestureRef.current.startDistance;
             const newZoom = Math.max(
@@ -307,8 +326,8 @@ export const Cropper: React.FC<CropperProps> = ({
               currentCropSize,
             );
             setImageOffset(clamped);
-            gestureRef.current.isPinching = true;
           } else if (!gestureRef.current.isPinching && touches.length === 1) {
+            // 单指拖动
             const newOffset = {
               x: gestureRef.current.startOffset.x + gestureState.dx,
               y: gestureRef.current.startOffset.y + gestureState.dy,
@@ -520,10 +539,7 @@ export const Cropper: React.FC<CropperProps> = ({
       bottom: 0,
       left: 0,
       right: 0,
-      height: Math.max(
-        0,
-        containerSize.height - cropBoxY - cropBoxSize.height,
-      ),
+      height: Math.max(0, containerSize.height - cropBoxY - cropBoxSize.height),
     }),
     [containerSize.height, cropBoxSize.height, cropBoxY],
   );
@@ -542,13 +558,16 @@ export const Cropper: React.FC<CropperProps> = ({
     () => ({
       top: cropBoxY,
       right: 0,
-      width: Math.max(
-        0,
-        containerSize.width - cropBoxX - cropBoxSize.width,
-      ),
+      width: Math.max(0, containerSize.width - cropBoxX - cropBoxSize.width),
       height: cropBoxSize.height,
     }),
-    [containerSize.width, cropBoxSize.height, cropBoxSize.width, cropBoxX, cropBoxY],
+    [
+      containerSize.width,
+      cropBoxSize.height,
+      cropBoxSize.width,
+      cropBoxX,
+      cropBoxY,
+    ],
   );
 
   const handleStyles = useMemo(
@@ -610,7 +629,9 @@ export const Cropper: React.FC<CropperProps> = ({
             <View style={[styles.gridVertical, styles.gridVerticalThird]} />
             <View style={[styles.gridVertical, styles.gridVerticalTwoThird]} />
             <View style={[styles.gridHorizontal, styles.gridHorizontalThird]} />
-            <View style={[styles.gridHorizontal, styles.gridHorizontalTwoThird]} />
+            <View
+              style={[styles.gridHorizontal, styles.gridHorizontalTwoThird]}
+            />
           </View>
 
           {/* 四角拖动手柄（仅自由比例模式） */}
