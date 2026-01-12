@@ -138,3 +138,15 @@ export const DEFAULT_SETTINGS: FrameSettings = {
   exportQuality: 0.9,
   exportScale: 3,
 };
+
+export interface ParsedExifData {
+  Make?: string;
+  Model?: string;
+  LensModel?: string;
+  FNumber?: string;
+  ExposureTime?: string;
+  ISO?: number | string;
+  DateTime?: string;
+  _raw?: any;
+}
+

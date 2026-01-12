@@ -10,23 +10,34 @@ import React, {useState} from 'react';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {EditorScreen, LaunchScreen} from './src/screens';
 
-export default function App() {
-  const [imageUri, setImageUri] = useState<string | null>(null);
+import {type ParsedExifData} from './src/types';
 
-  const handleImagePicked = (uri: string) => {
-    setImageUri(uri);
+export default function App() {
+  const [imageSource, setImageSource] = useState<{
+    uri: string;
+    exif?: ParsedExifData;
+  } | null>(null);
+
+  const handleImagePicked = (uri: string, data?: ParsedExifData) => {
+    console.log('🚀 [App] 接收到图片并准备跳转:', uri, !!data);
+    setImageSource({uri, exif: data});
   };
 
   const handleReset = () => {
-    setImageUri(null);
+    setImageSource(null);
   };
 
   return (
     <SafeAreaProvider>
-      {!imageUri ? (
+      {!imageSource ? (
         <LaunchScreen onImagePicked={handleImagePicked} />
       ) : (
-        <EditorScreen imageUri={imageUri} onReset={handleReset} />
+        <EditorScreen
+          key={imageSource.uri}
+          imageUri={imageSource.uri}
+          initialExif={imageSource.exif}
+          onReset={handleReset}
+        />
       )}
     </SafeAreaProvider>
   );
