@@ -175,6 +175,7 @@ export default function EditorScreen({imageUri, onReset}: EditorScreenProps) {
               onCropChange={cropControls.setCropRect}
               rotation={cropControls.cropRotation}
               zoom={cropControls.cropZoom}
+              onZoomChange={cropControls.setCropZoom}
               flip={cropControls.cropFlip}
               aspectRatio={getAspectRatioNumber(cropControls.cropAspect)}
             />

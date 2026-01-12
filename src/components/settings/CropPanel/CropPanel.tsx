@@ -28,9 +28,6 @@ const CROP_ASPECT_OPTIONS: SegmentedOption<CropAspectId>[] = [
 interface CropPanelProps {
   aspectId: CropAspectId;
   onAspectChange: (id: CropAspectId) => void;
-  zoom: number;
-  minZoom?: number;
-  onZoomChange: (value: number) => void;
   rotation: number;
   onRotationChange: (value: number) => void;
   onRotateStep: (delta: number) => void;
@@ -41,9 +38,6 @@ interface CropPanelProps {
 export default function CropPanel({
   aspectId,
   onAspectChange,
-  zoom,
-  minZoom = 1,
-  onZoomChange,
   rotation,
   onRotationChange,
   onRotateStep,
@@ -59,16 +53,6 @@ export default function CropPanel({
         options={CROP_ASPECT_OPTIONS}
         value={aspectId}
         onChange={onAspectChange}
-      />
-
-      <Slider
-        label="缩放"
-        value={zoom}
-        min={minZoom}
-        max={Math.max(minZoom + 2, 3)}
-        step={0.1}
-        onChange={onZoomChange}
-        unit="x"
       />
 
       <Slider

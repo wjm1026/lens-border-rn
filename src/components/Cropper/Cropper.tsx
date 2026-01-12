@@ -1,12 +1,11 @@
 /*
  * @Author: wjm 791215714@qq.com
  * @Date: 2026-01-12 01:25:00
- * @Description: 裁切组件，处理图像显示、裁切框覆盖及手势交互
+ * @Description: 裁切组件 - 支持双指缩放、拖动图片、拖动角落调整裁切框
  */
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Image, PanResponder, StyleSheet, View} from 'react-native';
 
-import {colors} from '../../theme';
 import type {CropRect} from '../../types';
 
 interface CropperProps {
@@ -16,11 +15,17 @@ interface CropperProps {
   aspectRatio?: number; // undefined means free
   rotation: number;
   zoom: number;
+  onZoomChange: (zoom: number) => void;
   flip: {horizontal: boolean; vertical: boolean};
 }
 
-const HANDLE_SIZE = 24;
-const HIT_SLOP = {top: 20, bottom: 20, left: 20, right: 20};
+const EDGE_PADDING = 20;
+const CORNER_LENGTH = 20;
+const CORNER_THICKNESS = 3;
+const HANDLE_SIZE = 44;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 5;
+const MIN_CROP_SIZE = 60;
 
 export const Cropper: React.FC<CropperProps> = ({
   imageUri,
@@ -29,22 +34,38 @@ export const Cropper: React.FC<CropperProps> = ({
   aspectRatio,
   rotation,
   zoom,
+  onZoomChange,
   flip,
 }) => {
-  const [viewSize, setViewSize] = useState({width: 0, height: 0});
-  const [imageSize, setImageSize] = useState({width: 0, height: 0});
-  // visualFitSize: Unscaled size that fits the view for the rotated image
-  const [visualFitSize, setVisualFitSize] = useState({width: 0, height: 0});
+  const [containerSize, setContainerSize] = useState({width: 0, height: 0});
+  const [imageNaturalSize, setImageNaturalSize] = useState({
+    width: 0,
+    height: 0,
+  });
+
+  // 图片偏移量（相对于中心点）
+  const [imageOffset, setImageOffset] = useState({x: 0, y: 0});
+
+  // 自由比例模式下的裁切框尺寸
+  const [freeCropSize, setFreeCropSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const prevAspectRatioRef = useRef(aspectRatio);
+  const isInitializedRef = useRef(false);
 
+  // 加载图片原始尺寸
   useEffect(() => {
     let isActive = true;
+    isInitializedRef.current = false;
+    setFreeCropSize(null);
     Image.getSize(
       imageUri,
       (width, height) => {
         if (isActive) {
-          setImageSize({width, height});
+          setImageNaturalSize({width, height});
+          setImageOffset({x: 0, y: 0});
         }
       },
       () => {},
@@ -54,349 +75,564 @@ export const Cropper: React.FC<CropperProps> = ({
     };
   }, [imageUri]);
 
-  // Calculate Visual Fit Size
-  useEffect(() => {
+  // 计算旋转后的视觉尺寸
+  const isRotated90or270 = rotation % 180 !== 0;
+  const visualImageW = isRotated90or270
+    ? imageNaturalSize.height
+    : imageNaturalSize.width;
+  const visualImageH = isRotated90or270
+    ? imageNaturalSize.width
+    : imageNaturalSize.height;
+
+  // 计算适应容器的基础尺寸
+  const baseFitSize = useMemo(() => {
     if (
-      viewSize.width > 0 &&
-      viewSize.height > 0 &&
-      imageSize.width > 0 &&
-      imageSize.height > 0
+      containerSize.width === 0 ||
+      containerSize.height === 0 ||
+      visualImageW === 0 ||
+      visualImageH === 0
     ) {
-      const isRotated = rotation % 180 !== 0;
-      const visualImgW = isRotated ? imageSize.height : imageSize.width;
-      const visualImgH = isRotated ? imageSize.width : imageSize.height;
-
-      const viewRatio = viewSize.width / viewSize.height;
-      const imgRatio = visualImgW / visualImgH;
-
-      let width, height;
-      if (imgRatio > viewRatio) {
-        width = viewSize.width;
-        height = viewSize.width / imgRatio;
-      } else {
-        height = viewSize.height;
-        width = viewSize.height * imgRatio;
-      }
-      setVisualFitSize({width, height});
+      return {width: 0, height: 0};
     }
-  }, [viewSize, imageSize, rotation]);
 
-  // Handle Aspect Ratio Change
-  useEffect(() => {
-    if (
-      aspectRatio !== undefined &&
-      aspectRatio !== prevAspectRatioRef.current
-    ) {
-      if (visualFitSize.width > 0 && visualFitSize.height > 0) {
-        const visualRatio = visualFitSize.width / visualFitSize.height;
-        let newW = 1,
-          newH = 1;
+    const availableW = containerSize.width - EDGE_PADDING * 2;
+    const availableH = containerSize.height - EDGE_PADDING * 2;
+    const imageRatio = visualImageW / visualImageH;
+    const containerRatio = availableW / availableH;
 
-        // Calculate normalized size that matches aspect ratio
-        // newW_norm / newH_norm = aspectRatio / visualRatio
-        const targetNormRatio = aspectRatio / visualRatio;
-
-        if (targetNormRatio > 1) {
-          newW = 1;
-          newH = 1 / targetNormRatio;
-        } else {
-          newH = 1;
-          newW = targetNormRatio;
-        }
-
-        onCropChange({
-          x: (1 - newW) / 2,
-          y: (1 - newH) / 2,
-          width: newW,
-          height: newH,
-        });
-      }
+    let width, height;
+    if (imageRatio > containerRatio) {
+      width = availableW;
+      height = availableW / imageRatio;
+    } else {
+      height = availableH;
+      width = availableH * imageRatio;
     }
-    prevAspectRatioRef.current = aspectRatio;
-  }, [aspectRatio, visualFitSize, onCropChange]);
 
-  const currentVisualW = visualFitSize.width * zoom;
-  const currentVisualH = visualFitSize.height * zoom;
+    return {width, height};
+  }, [containerSize, visualImageW, visualImageH]);
 
-  const getVisualRect = useCallback(() => {
-    return {
-      x: cropRect.x * currentVisualW,
-      y: cropRect.y * currentVisualH,
-      width: cropRect.width * currentVisualW,
-      height: cropRect.height * currentVisualH,
-    };
-  }, [cropRect, currentVisualW, currentVisualH]);
+  // 裁切框尺寸
+  const cropBoxSize = useMemo(() => {
+    if (baseFitSize.width === 0 || baseFitSize.height === 0) {
+      return {width: 0, height: 0};
+    }
 
-  const updateNormalizedRect = useCallback(
-    (vx: number, vy: number, vw: number, vh: number) => {
-      if (currentVisualW === 0 || currentVisualH === 0) {
-        return;
-      }
-      onCropChange({
-        x: vx / currentVisualW,
-        y: vy / currentVisualH,
-        width: vw / currentVisualW,
-        height: vh / currentVisualH,
-      });
-    },
-    [currentVisualW, currentVisualH, onCropChange],
+    // 自由比例模式且有自定义尺寸
+    if (aspectRatio === undefined && freeCropSize) {
+      return freeCropSize;
+    }
+
+    if (aspectRatio === undefined) {
+      // 自由比例默认全选
+      return {
+        width: baseFitSize.width,
+        height: baseFitSize.height,
+      };
+    }
+
+    // 固定比例
+    const boxRatio = baseFitSize.width / baseFitSize.height;
+    if (aspectRatio > boxRatio) {
+      return {
+        width: baseFitSize.width,
+        height: baseFitSize.width / aspectRatio,
+      };
+    } else {
+      return {
+        width: baseFitSize.height * aspectRatio,
+        height: baseFitSize.height,
+      };
+    }
+  }, [baseFitSize, aspectRatio, freeCropSize]);
+
+  // 图片显示尺寸（应用 zoom）
+  const imageDisplaySize = useMemo(
+    () => ({
+      width: baseFitSize.width * zoom,
+      height: baseFitSize.height * zoom,
+    }),
+    [baseFitSize, zoom],
   );
 
-  const clampRect = useCallback(
-    (x: number, y: number, w: number, h: number) => {
-      const maxX = currentVisualW;
-      const maxY = currentVisualH;
-      const MIN_SIZE = 40;
+  // 限制图片偏移量，确保裁切框始终在图片内
+  const clampImageOffset = useCallback(
+    (
+      ox: number,
+      oy: number,
+      currentZoom: number,
+      currentCropSize: {width: number; height: number},
+    ) => {
+      const imgW = baseFitSize.width * currentZoom;
+      const imgH = baseFitSize.height * currentZoom;
 
-      let newW = Math.max(MIN_SIZE, Math.min(w, maxX));
-      let newH = Math.max(MIN_SIZE, Math.min(h, maxY));
+      const maxOffsetX = Math.max(0, (imgW - currentCropSize.width) / 2);
+      const maxOffsetY = Math.max(0, (imgH - currentCropSize.height) / 2);
 
-      if (aspectRatio) {
-        if (newW / newH > aspectRatio) {
-          newW = newH * aspectRatio;
-        } else {
-          newH = newW / aspectRatio;
-        }
-      }
-
-      if (newW > maxX) {
-        newW = maxX;
-        if (aspectRatio) {
-          newH = newW / aspectRatio;
-        }
-      }
-      if (newH > maxY) {
-        newH = maxY;
-        if (aspectRatio) {
-          newW = newH * aspectRatio;
-        }
-      }
-
-      let newX = Math.max(0, Math.min(x, maxX - newW));
-      let newY = Math.max(0, Math.min(y, maxY - newH));
-
-      return {x: newX, y: newY, width: newW, height: newH};
-    },
-    [currentVisualW, currentVisualH, aspectRatio],
-  );
-
-  const gestureRef = useRef({
-    startX: 0,
-    startY: 0,
-    startRect: {x: 0, y: 0, width: 0, height: 0},
-    mode: 'none',
-    handle: '',
-  });
-
-  const createHandleResponder = useCallback(
-    (handle: string) =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onPanResponderGrant: () => {
-          gestureRef.current = {
-            startX: 0,
-            startY: 0,
-            startRect: getVisualRect(),
-            mode: 'resize',
-            handle,
-          };
-        },
-        onPanResponderMove: (evt, gestureState) => {
-          const {startRect, handle: activeHandle} = gestureRef.current;
-          const {dx, dy} = gestureState;
-          let {x, y, width, height} = startRect;
-
-          if (activeHandle.includes('l')) {
-            x += dx;
-            width -= dx;
-          } else {
-            width += dx;
-          }
-          if (activeHandle.includes('t')) {
-            y += dy;
-            height -= dy;
-          } else {
-            height += dy;
-          }
-
-          if (aspectRatio) {
-            const signW = activeHandle.includes('l') ? -1 : 1;
-            const signH = activeHandle.includes('t') ? -1 : 1;
-
-            if (Math.abs(dx) > Math.abs(dy)) {
-              width = startRect.width + dx * signW;
-              height = width / aspectRatio;
-            } else {
-              height = startRect.height + dy * signH;
-              width = height * aspectRatio;
-            }
-
-            if (activeHandle.includes('l')) {
-              x = startRect.x + startRect.width - width;
-            }
-            if (activeHandle.includes('t')) {
-              y = startRect.y + startRect.height - height;
-            }
-          }
-
-          const clamped = clampRect(x, y, width, height);
-          updateNormalizedRect(
-            clamped.x,
-            clamped.y,
-            clamped.width,
-            clamped.height,
-          );
-        },
-      }),
-    [aspectRatio, clampRect, getVisualRect, updateNormalizedRect],
-  );
-
-  const moveResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderGrant: () => {
-      gestureRef.current = {
-        startX: 0,
-        startY: 0,
-        startRect: getVisualRect(),
-        mode: 'move',
-        handle: '',
+      return {
+        x: Math.max(-maxOffsetX, Math.min(maxOffsetX, ox)),
+        y: Math.max(-maxOffsetY, Math.min(maxOffsetY, oy)),
       };
     },
-    onPanResponderMove: (evt, gestureState) => {
-      const {startRect} = gestureRef.current;
-      const {dx, dy} = gestureState;
-      const clamped = clampRect(
-        startRect.x + dx,
-        startRect.y + dy,
-        startRect.width,
-        startRect.height,
-      );
-      updateNormalizedRect(clamped.x, clamped.y, clamped.width, clamped.height);
-    },
-  });
-
-  const handleResponders = useMemo(
-    () => ({
-      tl: createHandleResponder('tl'),
-      tr: createHandleResponder('tr'),
-      bl: createHandleResponder('bl'),
-      br: createHandleResponder('br'),
-    }),
-    [createHandleResponder],
+    [baseFitSize],
   );
 
-  const vRect = getVisualRect();
-  const isRotated = rotation % 180 !== 0;
-  const imgStyleW = isRotated ? visualFitSize.height : visualFitSize.width;
-  const imgStyleH = isRotated ? visualFitSize.width : visualFitSize.height;
+  // 计算 cropRect
+  const calculateCropRect = useCallback(
+    (
+      offset: {x: number; y: number},
+      currentZoom: number,
+      currentCropSize: {width: number; height: number},
+    ): CropRect => {
+      const imgW = baseFitSize.width * currentZoom;
+      const imgH = baseFitSize.height * currentZoom;
+
+      if (imgW === 0 || imgH === 0) {
+        return {x: 0, y: 0, width: 1, height: 1};
+      }
+
+      const cropCenterX = -offset.x;
+      const cropCenterY = -offset.y;
+
+      const normCenterX = 0.5 + cropCenterX / imgW;
+      const normCenterY = 0.5 + cropCenterY / imgH;
+      const normW = currentCropSize.width / imgW;
+      const normH = currentCropSize.height / imgH;
+
+      return {
+        x: Math.max(0, Math.min(1 - normW, normCenterX - normW / 2)),
+        y: Math.max(0, Math.min(1 - normH, normCenterY - normH / 2)),
+        width: Math.min(1, normW),
+        height: Math.min(1, normH),
+      };
+    },
+    [baseFitSize],
+  );
+
+  // 处理 aspectRatio 变化
+  useEffect(() => {
+    if (aspectRatio !== prevAspectRatioRef.current && baseFitSize.width > 0) {
+      setImageOffset({x: 0, y: 0});
+      setFreeCropSize(null); // 重置自定义尺寸
+
+      // 计算新的裁切框尺寸
+      let newCropSize;
+      if (aspectRatio === undefined) {
+        newCropSize = baseFitSize;
+      } else {
+        const boxRatio = baseFitSize.width / baseFitSize.height;
+        if (aspectRatio > boxRatio) {
+          newCropSize = {
+            width: baseFitSize.width,
+            height: baseFitSize.width / aspectRatio,
+          };
+        } else {
+          newCropSize = {
+            width: baseFitSize.height * aspectRatio,
+            height: baseFitSize.height,
+          };
+        }
+      }
+
+      const newCropRect = calculateCropRect({x: 0, y: 0}, zoom, newCropSize);
+      onCropChange(newCropRect);
+    }
+    prevAspectRatioRef.current = aspectRatio;
+  }, [aspectRatio]);
+
+  // 初始化
+  useEffect(() => {
+    if (
+      baseFitSize.width > 0 &&
+      baseFitSize.height > 0 &&
+      !isInitializedRef.current
+    ) {
+      isInitializedRef.current = true;
+      const newCropRect = calculateCropRect({x: 0, y: 0}, zoom, cropBoxSize);
+      onCropChange(newCropRect);
+    }
+  }, [baseFitSize]);
+
+  // 手势状态
+  const gestureRef = useRef({
+    startOffset: {x: 0, y: 0},
+    startZoom: 1,
+    startDistance: 0,
+    isPinching: false,
+    startCropSize: {width: 0, height: 0},
+  });
+
+  const stateRef = useRef({zoom, imageOffset, cropBoxSize});
+  useEffect(() => {
+    stateRef.current = {zoom, imageOffset, cropBoxSize};
+  }, [zoom, imageOffset, cropBoxSize]);
+
+  // 图片拖动和双指缩放手势
+  const imageGestureResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: evt => {
+          const touches = evt.nativeEvent.touches;
+          gestureRef.current.startOffset = {...stateRef.current.imageOffset};
+          gestureRef.current.startZoom = stateRef.current.zoom;
+
+          if (touches.length === 2) {
+            const dx = touches[0].pageX - touches[1].pageX;
+            const dy = touches[0].pageY - touches[1].pageY;
+            gestureRef.current.startDistance = Math.sqrt(dx * dx + dy * dy);
+            gestureRef.current.isPinching = true;
+          } else {
+            gestureRef.current.isPinching = false;
+            gestureRef.current.startDistance = 0;
+          }
+        },
+        onPanResponderMove: (evt, gestureState) => {
+          const touches = evt.nativeEvent.touches;
+          const currentCropSize = stateRef.current.cropBoxSize;
+
+          if (touches.length === 2 && gestureRef.current.startDistance > 0) {
+            const dx = touches[0].pageX - touches[1].pageX;
+            const dy = touches[0].pageY - touches[1].pageY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            const scale = distance / gestureRef.current.startDistance;
+            const newZoom = Math.max(
+              MIN_ZOOM,
+              Math.min(MAX_ZOOM, gestureRef.current.startZoom * scale),
+            );
+            onZoomChange(newZoom);
+
+            const clamped = clampImageOffset(
+              gestureRef.current.startOffset.x,
+              gestureRef.current.startOffset.y,
+              newZoom,
+              currentCropSize,
+            );
+            setImageOffset(clamped);
+            gestureRef.current.isPinching = true;
+          } else if (!gestureRef.current.isPinching && touches.length === 1) {
+            const newOffset = {
+              x: gestureRef.current.startOffset.x + gestureState.dx,
+              y: gestureRef.current.startOffset.y + gestureState.dy,
+            };
+            const clamped = clampImageOffset(
+              newOffset.x,
+              newOffset.y,
+              stateRef.current.zoom,
+              currentCropSize,
+            );
+            setImageOffset(clamped);
+          }
+        },
+        onPanResponderRelease: () => {
+          const newCropRect = calculateCropRect(
+            stateRef.current.imageOffset,
+            stateRef.current.zoom,
+            stateRef.current.cropBoxSize,
+          );
+          onCropChange(newCropRect);
+          gestureRef.current.isPinching = false;
+        },
+      }),
+    [clampImageOffset, onZoomChange, calculateCropRect, onCropChange],
+  );
+
+  // 角落拖动手势（仅自由比例模式）
+  const createCornerResponder = useCallback(
+    (corner: 'tl' | 'tr' | 'bl' | 'br') => {
+      return PanResponder.create({
+        onStartShouldSetPanResponder: () => aspectRatio === undefined,
+        onMoveShouldSetPanResponder: () => aspectRatio === undefined,
+        onStartShouldSetPanResponderCapture: () => aspectRatio === undefined,
+        onMoveShouldSetPanResponderCapture: () => aspectRatio === undefined,
+        onPanResponderGrant: () => {
+          gestureRef.current.startCropSize = {...stateRef.current.cropBoxSize};
+          gestureRef.current.startOffset = {...stateRef.current.imageOffset};
+        },
+        onPanResponderMove: (_, gestureState) => {
+          if (aspectRatio !== undefined) return;
+
+          const {dx, dy} = gestureState;
+          const startSize = gestureRef.current.startCropSize;
+          const imgW = baseFitSize.width * stateRef.current.zoom;
+          const imgH = baseFitSize.height * stateRef.current.zoom;
+
+          let newW = startSize.width;
+          let newH = startSize.height;
+          let offsetDx = 0;
+          let offsetDy = 0;
+
+          // 根据角落位置调整尺寸和偏移
+          switch (corner) {
+            case 'tl':
+              newW = startSize.width - dx;
+              newH = startSize.height - dy;
+              offsetDx = dx / 2;
+              offsetDy = dy / 2;
+              break;
+            case 'tr':
+              newW = startSize.width + dx;
+              newH = startSize.height - dy;
+              offsetDx = dx / 2;
+              offsetDy = dy / 2;
+              break;
+            case 'bl':
+              newW = startSize.width - dx;
+              newH = startSize.height + dy;
+              offsetDx = dx / 2;
+              offsetDy = dy / 2;
+              break;
+            case 'br':
+              newW = startSize.width + dx;
+              newH = startSize.height + dy;
+              offsetDx = dx / 2;
+              offsetDy = dy / 2;
+              break;
+          }
+
+          // 限制尺寸
+          newW = Math.max(MIN_CROP_SIZE, Math.min(newW, imgW));
+          newH = Math.max(MIN_CROP_SIZE, Math.min(newH, imgH));
+
+          setFreeCropSize({width: newW, height: newH});
+
+          // 调整偏移以保持图片在裁切框内
+          const newOffset = {
+            x: gestureRef.current.startOffset.x + offsetDx,
+            y: gestureRef.current.startOffset.y + offsetDy,
+          };
+          const clamped = clampImageOffset(
+            newOffset.x,
+            newOffset.y,
+            stateRef.current.zoom,
+            {width: newW, height: newH},
+          );
+          setImageOffset(clamped);
+        },
+        onPanResponderRelease: () => {
+          const newCropRect = calculateCropRect(
+            stateRef.current.imageOffset,
+            stateRef.current.zoom,
+            stateRef.current.cropBoxSize,
+          );
+          onCropChange(newCropRect);
+        },
+      });
+    },
+    [
+      aspectRatio,
+      baseFitSize,
+      clampImageOffset,
+      calculateCropRect,
+      onCropChange,
+    ],
+  );
+
+  const cornerResponders = useMemo(
+    () => ({
+      tl: createCornerResponder('tl'),
+      tr: createCornerResponder('tr'),
+      bl: createCornerResponder('bl'),
+      br: createCornerResponder('br'),
+    }),
+    [createCornerResponder],
+  );
+
+  // 位置计算
+  const cropBoxPosition = {
+    x: (containerSize.width - cropBoxSize.width) / 2,
+    y: (containerSize.height - cropBoxSize.height) / 2,
+  };
+
+  const imagePosition = {
+    x: (containerSize.width - imageDisplaySize.width) / 2 + imageOffset.x,
+    y: (containerSize.height - imageDisplaySize.height) / 2 + imageOffset.y,
+  };
+
+  const isReady =
+    containerSize.width > 0 &&
+    containerSize.height > 0 &&
+    imageDisplaySize.width > 0 &&
+    imageNaturalSize.width > 0;
+
+  const isFreeMode = aspectRatio === undefined;
 
   return (
     <View
       style={styles.container}
-      onLayout={e => setViewSize(e.nativeEvent.layout)}>
-      <View
-        style={{
-          width: currentVisualW,
-          height: currentVisualH,
-          position: 'relative',
-        }}>
-        <Image
-          source={{uri: imageUri}}
-          style={[
-            styles.image,
-            {
-              width: imgStyleW * zoom,
-              height: imgStyleH * zoom,
-              left: (currentVisualW - imgStyleW * zoom) / 2,
-              top: (currentVisualH - imgStyleH * zoom) / 2,
-              transform: [
-                {rotate: `${rotation}deg`},
-                {scaleX: flip.horizontal ? -1 : 1},
-                {scaleY: flip.vertical ? -1 : 1},
-              ],
-            },
-          ]}
-          resizeMode="stretch"
-        />
-
-        <View
-          style={[
-            styles.overlay,
-            {top: 0, height: Math.max(0, vRect.y), left: 0, right: 0},
-          ]}
-        />
-        <View
-          style={[
-            styles.overlay,
-            {top: vRect.y + vRect.height, bottom: 0, left: 0, right: 0},
-          ]}
-        />
-        <View
-          style={[
-            styles.overlay,
-            {
-              top: vRect.y,
-              height: vRect.height,
-              left: 0,
-              width: Math.max(0, vRect.x),
-            },
-          ]}
-        />
-        <View
-          style={[
-            styles.overlay,
-            {
-              top: vRect.y,
-              height: vRect.height,
-              right: 0,
-              width: Math.max(0, currentVisualW - (vRect.x + vRect.width)),
-            },
-          ]}
-        />
-
-        <View
-          style={[
-            styles.cropBox,
-            {
-              left: vRect.x,
-              top: vRect.y,
-              width: vRect.width,
-              height: vRect.height,
-            },
-          ]}
-          {...moveResponder.panHandlers}>
-          <View style={[styles.border, styles.borderTop]} />
-          <View style={[styles.border, styles.borderBottom]} />
-          <View style={[styles.border, styles.borderLeft]} />
-          <View style={[styles.border, styles.borderRight]} />
-
-          <View style={styles.gridVertical} />
-          <View style={[styles.gridVertical, {left: '66%'}]} />
-          <View style={styles.gridHorizontal} />
-          <View style={[styles.gridHorizontal, {top: '66%'}]} />
-
+      onLayout={e => setContainerSize(e.nativeEvent.layout)}>
+      {isReady && (
+        <>
+          {/* 可拖动的图片层 */}
           <View
-            style={[styles.handle, styles.handleTL]}
-            hitSlop={HIT_SLOP}
-            {...handleResponders.tl.panHandlers}
-          />
+            style={StyleSheet.absoluteFill}
+            {...imageGestureResponder.panHandlers}>
+            <Image
+              source={{uri: imageUri}}
+              style={[
+                styles.image,
+                {
+                  width: isRotated90or270
+                    ? imageDisplaySize.height
+                    : imageDisplaySize.width,
+                  height: isRotated90or270
+                    ? imageDisplaySize.width
+                    : imageDisplaySize.height,
+                  left:
+                    imagePosition.x +
+                    (isRotated90or270
+                      ? (imageDisplaySize.width - imageDisplaySize.height) / 2
+                      : 0),
+                  top:
+                    imagePosition.y +
+                    (isRotated90or270
+                      ? (imageDisplaySize.height - imageDisplaySize.width) / 2
+                      : 0),
+                  transform: [
+                    {rotate: `${rotation}deg`},
+                    {scaleX: flip.horizontal ? -1 : 1},
+                    {scaleY: flip.vertical ? -1 : 1},
+                  ],
+                },
+              ]}
+              resizeMode="cover"
+            />
+          </View>
+
+          {/* 遮罩层 */}
+          <View style={styles.overlayContainer} pointerEvents="none">
+            <View
+              style={[
+                styles.overlay,
+                {
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: Math.max(0, cropBoxPosition.y),
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.overlay,
+                {
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: Math.max(
+                    0,
+                    containerSize.height -
+                      cropBoxPosition.y -
+                      cropBoxSize.height,
+                  ),
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.overlay,
+                {
+                  top: cropBoxPosition.y,
+                  left: 0,
+                  width: Math.max(0, cropBoxPosition.x),
+                  height: cropBoxSize.height,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.overlay,
+                {
+                  top: cropBoxPosition.y,
+                  right: 0,
+                  width: Math.max(
+                    0,
+                    containerSize.width - cropBoxPosition.x - cropBoxSize.width,
+                  ),
+                  height: cropBoxSize.height,
+                },
+              ]}
+            />
+          </View>
+
+          {/* 裁切框边框 */}
           <View
-            style={[styles.handle, styles.handleTR]}
-            hitSlop={HIT_SLOP}
-            {...handleResponders.tr.panHandlers}
-          />
-          <View
-            style={[styles.handle, styles.handleBL]}
-            hitSlop={HIT_SLOP}
-            {...handleResponders.bl.panHandlers}
-          />
-          <View
-            style={[styles.handle, styles.handleBR]}
-            hitSlop={HIT_SLOP}
-            {...handleResponders.br.panHandlers}
-          />
-        </View>
-      </View>
+            style={[
+              styles.cropBox,
+              {
+                left: cropBoxPosition.x,
+                top: cropBoxPosition.y,
+                width: cropBoxSize.width,
+                height: cropBoxSize.height,
+              },
+            ]}
+            pointerEvents="none">
+            {/* 角落装饰 */}
+            <View style={[styles.corner, styles.cornerTL]} />
+            <View style={[styles.corner, styles.cornerTR]} />
+            <View style={[styles.corner, styles.cornerBL]} />
+            <View style={[styles.corner, styles.cornerBR]} />
+
+            {/* 三分网格线 */}
+            <View style={[styles.gridVertical, {left: '33.33%'}]} />
+            <View style={[styles.gridVertical, {left: '66.66%'}]} />
+            <View style={[styles.gridHorizontal, {top: '33.33%'}]} />
+            <View style={[styles.gridHorizontal, {top: '66.66%'}]} />
+          </View>
+
+          {/* 四角拖动手柄（仅自由比例模式） */}
+          {isFreeMode && (
+            <>
+              <View
+                style={[
+                  styles.handleContainer,
+                  {
+                    left: cropBoxPosition.x - HANDLE_SIZE / 2,
+                    top: cropBoxPosition.y - HANDLE_SIZE / 2,
+                  },
+                ]}
+                {...cornerResponders.tl.panHandlers}
+              />
+              <View
+                style={[
+                  styles.handleContainer,
+                  {
+                    left:
+                      cropBoxPosition.x + cropBoxSize.width - HANDLE_SIZE / 2,
+                    top: cropBoxPosition.y - HANDLE_SIZE / 2,
+                  },
+                ]}
+                {...cornerResponders.tr.panHandlers}
+              />
+              <View
+                style={[
+                  styles.handleContainer,
+                  {
+                    left: cropBoxPosition.x - HANDLE_SIZE / 2,
+                    top:
+                      cropBoxPosition.y + cropBoxSize.height - HANDLE_SIZE / 2,
+                  },
+                ]}
+                {...cornerResponders.bl.panHandlers}
+              />
+              <View
+                style={[
+                  styles.handleContainer,
+                  {
+                    left:
+                      cropBoxPosition.x + cropBoxSize.width - HANDLE_SIZE / 2,
+                    top:
+                      cropBoxPosition.y + cropBoxSize.height - HANDLE_SIZE / 2,
+                  },
+                ]}
+                {...cornerResponders.br.panHandlers}
+              />
+            </>
+          )}
+        </>
+      )}
     </View>
   );
 };
@@ -404,13 +640,14 @@ export const Cropper: React.FC<CropperProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
     backgroundColor: '#000',
+    overflow: 'hidden',
   },
   image: {
     position: 'absolute',
+  },
+  overlayContainer: {
+    ...StyleSheet.absoluteFillObject,
   },
   overlay: {
     position: 'absolute',
@@ -418,47 +655,60 @@ const styles = StyleSheet.create({
   },
   cropBox: {
     position: 'absolute',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
   },
-  border: {
+  corner: {
     position: 'absolute',
-    backgroundColor: 'white',
-    elevation: 5,
+    width: CORNER_LENGTH,
+    height: CORNER_LENGTH,
   },
-  borderTop: {top: -1, height: 2, left: 0, right: 0},
-  borderBottom: {bottom: -1, height: 2, left: 0, right: 0},
-  borderLeft: {left: -1, width: 2, top: 0, bottom: 0},
-  borderRight: {right: -1, width: 2, top: 0, bottom: 0},
-
-  handle: {
-    position: 'absolute',
-    width: HANDLE_SIZE,
-    height: HANDLE_SIZE,
-    borderRadius: HANDLE_SIZE / 2,
-    backgroundColor: colors.accent,
-    borderWidth: 2,
+  cornerTL: {
+    top: -1,
+    left: -1,
+    borderTopWidth: CORNER_THICKNESS,
+    borderLeftWidth: CORNER_THICKNESS,
     borderColor: 'white',
-    elevation: 10,
-    zIndex: 10,
   },
-  handleTL: {top: -HANDLE_SIZE / 2, left: -HANDLE_SIZE / 2},
-  handleTR: {top: -HANDLE_SIZE / 2, right: -HANDLE_SIZE / 2},
-  handleBL: {bottom: -HANDLE_SIZE / 2, left: -HANDLE_SIZE / 2},
-  handleBR: {bottom: -HANDLE_SIZE / 2, right: -HANDLE_SIZE / 2},
-
+  cornerTR: {
+    top: -1,
+    right: -1,
+    borderTopWidth: CORNER_THICKNESS,
+    borderRightWidth: CORNER_THICKNESS,
+    borderColor: 'white',
+  },
+  cornerBL: {
+    bottom: -1,
+    left: -1,
+    borderBottomWidth: CORNER_THICKNESS,
+    borderLeftWidth: CORNER_THICKNESS,
+    borderColor: 'white',
+  },
+  cornerBR: {
+    bottom: -1,
+    right: -1,
+    borderBottomWidth: CORNER_THICKNESS,
+    borderRightWidth: CORNER_THICKNESS,
+    borderColor: 'white',
+  },
   gridVertical: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width: 1,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    left: '33%',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   gridHorizontal: {
     position: 'absolute',
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    top: '33%',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  handleContainer: {
+    position: 'absolute',
+    width: HANDLE_SIZE,
+    height: HANDLE_SIZE,
+    zIndex: 100,
   },
 });

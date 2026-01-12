@@ -64,9 +64,6 @@ export default function EditorSettingsPanel({
         <CropPanel
           aspectId={cropControls.cropAspect}
           onAspectChange={cropControls.setCropAspect}
-          zoom={cropControls.cropZoom}
-          minZoom={cropControls.minZoom}
-          onZoomChange={cropControls.setCropZoom}
           rotation={cropControls.cropRotation}
           onRotationChange={cropControls.setCropRotation}
           onRotateStep={cropControls.handleRotateStep}
@@ -114,7 +111,9 @@ export default function EditorSettingsPanel({
 
   return (
     <>
-      {isOpen && <Pressable style={styles.panelDismissOverlay} onPress={onClose} />}
+      {isOpen && (
+        <Pressable style={styles.panelDismissOverlay} onPress={onClose} />
+      )}
       <FloatingPanel visible={isOpen} contentKey={activeTab}>
         {panelContent}
       </FloatingPanel>
