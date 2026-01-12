@@ -41,12 +41,12 @@ const requestAndroidSavePermission = async () => {
 
 /**
  * 高分辨率导出 Hook
- * 
+ *
  * 关键实现思路：
  * 1. captureRef 的 width 参数会告诉库以更高分辨率渲染
  * 2. 我们使用 屏幕宽度 * 用户选择的倍数 作为目标宽度
  * 3. 这样可以达到最高 4x 放大
- * 
+ *
  * 例如：iPhone 14 Pro (393pt) * 4 = 1572px 导出宽度
  * 配合设备像素比 3x = 4716 物理像素
  */

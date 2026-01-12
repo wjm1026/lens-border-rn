@@ -10,7 +10,6 @@ import type {CropRect} from '../../types';
 
 interface CropperProps {
   imageUri: string;
-  cropRect: CropRect;
   onCropChange: (rect: CropRect) => void;
   aspectRatio?: number; // undefined means free
   rotation: number;
@@ -29,7 +28,6 @@ const MIN_CROP_SIZE = 60;
 
 export const Cropper: React.FC<CropperProps> = ({
   imageUri,
-  cropRect,
   onCropChange,
   aspectRatio,
   rotation,
@@ -238,7 +236,7 @@ export const Cropper: React.FC<CropperProps> = ({
       onCropChange(newCropRect);
     }
     prevAspectRatioRef.current = aspectRatio;
-  }, [aspectRatio]);
+  }, [aspectRatio, baseFitSize, calculateCropRect, onCropChange, zoom]);
 
   // 初始化
   useEffect(() => {
@@ -251,7 +249,7 @@ export const Cropper: React.FC<CropperProps> = ({
       const newCropRect = calculateCropRect({x: 0, y: 0}, zoom, cropBoxSize);
       onCropChange(newCropRect);
     }
-  }, [baseFitSize]);
+  }, [baseFitSize, calculateCropRect, cropBoxSize, onCropChange, zoom]);
 
   // 手势状态
   const gestureRef = useRef({
@@ -352,7 +350,9 @@ export const Cropper: React.FC<CropperProps> = ({
           gestureRef.current.startOffset = {...stateRef.current.imageOffset};
         },
         onPanResponderMove: (_, gestureState) => {
-          if (aspectRatio !== undefined) return;
+          if (aspectRatio !== undefined) {
+            return;
+          }
 
           const {dx, dy} = gestureState;
           const startSize = gestureRef.current.startCropSize;
@@ -441,15 +441,13 @@ export const Cropper: React.FC<CropperProps> = ({
   );
 
   // 位置计算
-  const cropBoxPosition = {
-    x: (containerSize.width - cropBoxSize.width) / 2,
-    y: (containerSize.height - cropBoxSize.height) / 2,
-  };
+  const cropBoxX = (containerSize.width - cropBoxSize.width) / 2;
+  const cropBoxY = (containerSize.height - cropBoxSize.height) / 2;
 
-  const imagePosition = {
-    x: (containerSize.width - imageDisplaySize.width) / 2 + imageOffset.x,
-    y: (containerSize.height - imageDisplaySize.height) / 2 + imageOffset.y,
-  };
+  const imageX =
+    (containerSize.width - imageDisplaySize.width) / 2 + imageOffset.x;
+  const imageY =
+    (containerSize.height - imageDisplaySize.height) / 2 + imageOffset.y;
 
   const isReady =
     containerSize.width > 0 &&
@@ -458,6 +456,124 @@ export const Cropper: React.FC<CropperProps> = ({
     imageNaturalSize.width > 0;
 
   const isFreeMode = aspectRatio === undefined;
+
+  const imageStyle = useMemo(() => {
+    const width = isRotated90or270
+      ? imageDisplaySize.height
+      : imageDisplaySize.width;
+    const height = isRotated90or270
+      ? imageDisplaySize.width
+      : imageDisplaySize.height;
+    const leftOffset =
+      imageX +
+      (isRotated90or270
+        ? (imageDisplaySize.width - imageDisplaySize.height) / 2
+        : 0);
+    const topOffset =
+      imageY +
+      (isRotated90or270
+        ? (imageDisplaySize.height - imageDisplaySize.width) / 2
+        : 0);
+
+    return {
+      width,
+      height,
+      left: leftOffset,
+      top: topOffset,
+      transform: [
+        {rotate: `${rotation}deg`},
+        {scaleX: flip.horizontal ? -1 : 1},
+        {scaleY: flip.vertical ? -1 : 1},
+      ],
+    };
+  }, [
+    flip.horizontal,
+    flip.vertical,
+    imageDisplaySize.height,
+    imageDisplaySize.width,
+    imageX,
+    imageY,
+    isRotated90or270,
+    rotation,
+  ]);
+
+  const cropBoxStyle = useMemo(
+    () => ({
+      left: cropBoxX,
+      top: cropBoxY,
+      width: cropBoxSize.width,
+      height: cropBoxSize.height,
+    }),
+    [cropBoxSize.height, cropBoxSize.width, cropBoxX, cropBoxY],
+  );
+
+  const overlayTopStyle = useMemo(
+    () => ({
+      top: 0,
+      left: 0,
+      right: 0,
+      height: Math.max(0, cropBoxY),
+    }),
+    [cropBoxY],
+  );
+
+  const overlayBottomStyle = useMemo(
+    () => ({
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: Math.max(
+        0,
+        containerSize.height - cropBoxY - cropBoxSize.height,
+      ),
+    }),
+    [containerSize.height, cropBoxSize.height, cropBoxY],
+  );
+
+  const overlayLeftStyle = useMemo(
+    () => ({
+      top: cropBoxY,
+      left: 0,
+      width: Math.max(0, cropBoxX),
+      height: cropBoxSize.height,
+    }),
+    [cropBoxSize.height, cropBoxX, cropBoxY],
+  );
+
+  const overlayRightStyle = useMemo(
+    () => ({
+      top: cropBoxY,
+      right: 0,
+      width: Math.max(
+        0,
+        containerSize.width - cropBoxX - cropBoxSize.width,
+      ),
+      height: cropBoxSize.height,
+    }),
+    [containerSize.width, cropBoxSize.height, cropBoxSize.width, cropBoxX, cropBoxY],
+  );
+
+  const handleStyles = useMemo(
+    () => ({
+      tl: {
+        left: cropBoxX - HANDLE_SIZE / 2,
+        top: cropBoxY - HANDLE_SIZE / 2,
+      },
+      tr: {
+        left: cropBoxX + cropBoxSize.width - HANDLE_SIZE / 2,
+        top: cropBoxY - HANDLE_SIZE / 2,
+      },
+      bl: {
+        left: cropBoxX - HANDLE_SIZE / 2,
+        top: cropBoxY + cropBoxSize.height - HANDLE_SIZE / 2,
+      },
+      br: {
+        left: cropBoxX + cropBoxSize.width - HANDLE_SIZE / 2,
+        top: cropBoxY + cropBoxSize.height - HANDLE_SIZE / 2,
+      },
+    }),
+    [cropBoxSize.height, cropBoxSize.width, cropBoxX, cropBoxY],
+  );
 
   return (
     <View
@@ -471,104 +587,21 @@ export const Cropper: React.FC<CropperProps> = ({
             {...imageGestureResponder.panHandlers}>
             <Image
               source={{uri: imageUri}}
-              style={[
-                styles.image,
-                {
-                  width: isRotated90or270
-                    ? imageDisplaySize.height
-                    : imageDisplaySize.width,
-                  height: isRotated90or270
-                    ? imageDisplaySize.width
-                    : imageDisplaySize.height,
-                  left:
-                    imagePosition.x +
-                    (isRotated90or270
-                      ? (imageDisplaySize.width - imageDisplaySize.height) / 2
-                      : 0),
-                  top:
-                    imagePosition.y +
-                    (isRotated90or270
-                      ? (imageDisplaySize.height - imageDisplaySize.width) / 2
-                      : 0),
-                  transform: [
-                    {rotate: `${rotation}deg`},
-                    {scaleX: flip.horizontal ? -1 : 1},
-                    {scaleY: flip.vertical ? -1 : 1},
-                  ],
-                },
-              ]}
+              style={[styles.image, imageStyle]}
               resizeMode="cover"
             />
           </View>
 
           {/* 遮罩层 */}
           <View style={styles.overlayContainer} pointerEvents="none">
-            <View
-              style={[
-                styles.overlay,
-                {
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: Math.max(0, cropBoxPosition.y),
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.overlay,
-                {
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: Math.max(
-                    0,
-                    containerSize.height -
-                      cropBoxPosition.y -
-                      cropBoxSize.height,
-                  ),
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.overlay,
-                {
-                  top: cropBoxPosition.y,
-                  left: 0,
-                  width: Math.max(0, cropBoxPosition.x),
-                  height: cropBoxSize.height,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.overlay,
-                {
-                  top: cropBoxPosition.y,
-                  right: 0,
-                  width: Math.max(
-                    0,
-                    containerSize.width - cropBoxPosition.x - cropBoxSize.width,
-                  ),
-                  height: cropBoxSize.height,
-                },
-              ]}
-            />
+            <View style={[styles.overlay, overlayTopStyle]} />
+            <View style={[styles.overlay, overlayBottomStyle]} />
+            <View style={[styles.overlay, overlayLeftStyle]} />
+            <View style={[styles.overlay, overlayRightStyle]} />
           </View>
 
           {/* 裁切框边框 */}
-          <View
-            style={[
-              styles.cropBox,
-              {
-                left: cropBoxPosition.x,
-                top: cropBoxPosition.y,
-                width: cropBoxSize.width,
-                height: cropBoxSize.height,
-              },
-            ]}
-            pointerEvents="none">
+          <View style={[styles.cropBox, cropBoxStyle]} pointerEvents="none">
             {/* 角落装饰 */}
             <View style={[styles.corner, styles.cornerTL]} />
             <View style={[styles.corner, styles.cornerTR]} />
@@ -576,57 +609,29 @@ export const Cropper: React.FC<CropperProps> = ({
             <View style={[styles.corner, styles.cornerBR]} />
 
             {/* 三分网格线 */}
-            <View style={[styles.gridVertical, {left: '33.33%'}]} />
-            <View style={[styles.gridVertical, {left: '66.66%'}]} />
-            <View style={[styles.gridHorizontal, {top: '33.33%'}]} />
-            <View style={[styles.gridHorizontal, {top: '66.66%'}]} />
+            <View style={[styles.gridVertical, styles.gridVerticalThird]} />
+            <View style={[styles.gridVertical, styles.gridVerticalTwoThird]} />
+            <View style={[styles.gridHorizontal, styles.gridHorizontalThird]} />
+            <View style={[styles.gridHorizontal, styles.gridHorizontalTwoThird]} />
           </View>
 
           {/* 四角拖动手柄（仅自由比例模式） */}
           {isFreeMode && (
             <>
               <View
-                style={[
-                  styles.handleContainer,
-                  {
-                    left: cropBoxPosition.x - HANDLE_SIZE / 2,
-                    top: cropBoxPosition.y - HANDLE_SIZE / 2,
-                  },
-                ]}
+                style={[styles.handleContainer, handleStyles.tl]}
                 {...cornerResponders.tl.panHandlers}
               />
               <View
-                style={[
-                  styles.handleContainer,
-                  {
-                    left:
-                      cropBoxPosition.x + cropBoxSize.width - HANDLE_SIZE / 2,
-                    top: cropBoxPosition.y - HANDLE_SIZE / 2,
-                  },
-                ]}
+                style={[styles.handleContainer, handleStyles.tr]}
                 {...cornerResponders.tr.panHandlers}
               />
               <View
-                style={[
-                  styles.handleContainer,
-                  {
-                    left: cropBoxPosition.x - HANDLE_SIZE / 2,
-                    top:
-                      cropBoxPosition.y + cropBoxSize.height - HANDLE_SIZE / 2,
-                  },
-                ]}
+                style={[styles.handleContainer, handleStyles.bl]}
                 {...cornerResponders.bl.panHandlers}
               />
               <View
-                style={[
-                  styles.handleContainer,
-                  {
-                    left:
-                      cropBoxPosition.x + cropBoxSize.width - HANDLE_SIZE / 2,
-                    top:
-                      cropBoxPosition.y + cropBoxSize.height - HANDLE_SIZE / 2,
-                  },
-                ]}
+                style={[styles.handleContainer, handleStyles.br]}
                 {...cornerResponders.br.panHandlers}
               />
             </>
@@ -698,12 +703,24 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
+  gridVerticalThird: {
+    left: '33.33%',
+  },
+  gridVerticalTwoThird: {
+    left: '66.66%',
+  },
   gridHorizontal: {
     position: 'absolute',
     left: 0,
     right: 0,
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  gridHorizontalThird: {
+    top: '33.33%',
+  },
+  gridHorizontalTwoThird: {
+    top: '66.66%',
   },
   handleContainer: {
     position: 'absolute',

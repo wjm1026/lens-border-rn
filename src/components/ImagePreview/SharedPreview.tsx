@@ -68,6 +68,14 @@ export const SharedPreview = React.memo(
       [framePadding, settings.showExif, viewportSize.width, exifPadding],
     );
 
+    const viewportStyle = useMemo(
+      () => ({
+        width: viewportSize.width,
+        height: viewportSize.height,
+      }),
+      [viewportSize.height, viewportSize.width],
+    );
+
     // Math for Visual Crop Transform
     const visualW = viewportSize.width / cropRect.width;
     const visualH = viewportSize.height / cropRect.height;
@@ -76,42 +84,49 @@ export const SharedPreview = React.memo(
     const imgStyleW = isRotated ? visualH : visualW;
     const imgStyleH = isRotated ? visualW : visualH;
 
+    const cropFrameStyle = useMemo(
+      () => ({
+        width: visualW,
+        height: visualH,
+        left: -cropRect.x * visualW,
+        top: -cropRect.y * visualH,
+      }),
+      [cropRect.x, cropRect.y, visualH, visualW],
+    );
+
+    const imageStyle = useMemo(
+      () => ({
+        width: imgStyleW,
+        height: imgStyleH,
+        left: (visualW - imgStyleW) / 2,
+        top: (visualH - imgStyleH) / 2,
+        transform: [
+          {rotate: `${cropRotation}deg`},
+          {scaleX: cropFlip.horizontal ? -1 : 1},
+          {scaleY: cropFlip.vertical ? -1 : 1},
+        ],
+      }),
+      [
+        cropFlip.horizontal,
+        cropFlip.vertical,
+        cropRotation,
+        imgStyleH,
+        imgStyleW,
+        visualH,
+        visualW,
+      ],
+    );
+
     return (
       <View style={frameStyle} collapsable={false}>
         <BackgroundLayer settings={settings} imageUri={imageUri} />
         <View
-          style={[
-            styles.imageViewportOuter,
-            imageShadowStyle,
-            {
-              width: viewportSize.width,
-              height: viewportSize.height,
-            },
-          ]}>
+          style={[styles.imageViewportOuter, imageShadowStyle, viewportStyle]}>
           <View style={[styles.imageViewport, imageBorderStyle]}>
-            <View
-              style={{
-                width: visualW,
-                height: visualH,
-                left: -cropRect.x * visualW,
-                top: -cropRect.y * visualH,
-                position: 'absolute',
-                overflow: 'hidden',
-              }}>
+            <View style={[styles.cropFrame, cropFrameStyle]}>
               <Image
                 source={{uri: imageUri}}
-                style={{
-                  width: imgStyleW,
-                  height: imgStyleH,
-                  left: (visualW - imgStyleW) / 2,
-                  top: (visualH - imgStyleH) / 2,
-                  position: 'absolute',
-                  transform: [
-                    {rotate: `${cropRotation}deg`},
-                    {scaleX: cropFlip.horizontal ? -1 : 1},
-                    {scaleY: cropFlip.vertical ? -1 : 1},
-                  ],
-                }}
+                style={[styles.croppedImage, imageStyle]}
                 resizeMode="cover"
                 onLoadEnd={onImageLoad}
               />
@@ -153,5 +168,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  cropFrame: {
+    position: 'absolute',
+    overflow: 'hidden',
+  },
+  croppedImage: {
+    position: 'absolute',
   },
 });

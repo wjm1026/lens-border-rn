@@ -18,4 +18,8 @@ export const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  previewContainer: {
+    flex: 1,
+    width: '100%',
+  },
 });

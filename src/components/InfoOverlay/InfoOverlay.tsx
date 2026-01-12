@@ -5,6 +5,7 @@ import {
   Text,
   View,
   type TextStyle,
+  type ViewStyle,
 } from 'react-native';
 
 import type {FrameSettings} from '../../types';
@@ -113,25 +114,30 @@ export default function InfoOverlay({
     ],
   );
 
+  const alignItems: ViewStyle['alignItems'] =
+    settings.infoLayout === 'centered' ? 'center' : 'stretch';
+
+  const containerStyle = useMemo(
+    () => ({
+      left: framePadding,
+      right: framePadding,
+      bottom: baseBottom,
+      transform: [
+        {translateX: settings.infoOffset.x},
+        {translateY: settings.infoOffset.y},
+      ],
+      alignItems,
+    }),
+    [alignItems, baseBottom, framePadding, settings.infoOffset.x, settings.infoOffset.y],
+  );
+
   if (!settings.showExif) {
     return null;
   }
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          left: framePadding,
-          right: framePadding,
-          bottom: baseBottom,
-          transform: [
-            {translateX: settings.infoOffset.x},
-            {translateY: settings.infoOffset.y},
-          ],
-          alignItems: settings.infoLayout === 'centered' ? 'center' : 'stretch',
-        },
-      ]}
+      style={[styles.container, containerStyle]}
       {...panResponder.panHandlers}>
       {settings.infoLayout === 'centered' ? (
         <View style={[styles.centeredBlock, {padding: settings.infoPadding}]}>

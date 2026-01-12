@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 
 import type {CropAspectId, CropRect} from '../types';
 
@@ -29,6 +29,22 @@ export const useCropControls = (imageUri: string) => {
     setCropRect({x: 0, y: 0, width: 1, height: 1});
   }, [imageUri]);
 
+  const cropAspectRatio = useMemo(() => {
+    if (cropAspect === 'free') {
+      return undefined;
+    }
+    const parts = cropAspect.split(':');
+    if (parts.length !== 2) {
+      return undefined;
+    }
+    const width = Number(parts[0]);
+    const height = Number(parts[1]);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || height === 0) {
+      return undefined;
+    }
+    return width / height;
+  }, [cropAspect]);
+
   const handleRotateStep = useCallback((delta: number) => {
     setCropRotation(prev => {
       const next = (prev + delta) % 360;
@@ -42,6 +58,7 @@ export const useCropControls = (imageUri: string) => {
     cropRotation,
     cropFlip,
     cropRect,
+    cropAspectRatio,
     minZoom: MIN_ZOOM,
     setCropAspect,
     setCropZoom,

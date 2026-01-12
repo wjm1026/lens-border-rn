@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useRef, useEffect} from 'react';
+import React, {useState, useCallback, useMemo, useRef, useEffect} from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   PanResponder,
   Pressable,
+  type ViewStyle,
 } from 'react-native';
 import Svg, {Rect, Defs, LinearGradient, Stop} from 'react-native-svg';
 import {colors} from '../../../theme';
@@ -159,7 +160,17 @@ export function ColorPicker({
       lastColorRef.current = localColor;
       onChange(localColor);
     }
-  }, [localColor, isOpen]);
+  }, [localColor, isOpen, onChange]);
+
+  const panelIndicatorStyle = useMemo(
+    () =>
+      ({
+        left: `${saturation}%`,
+        top: `${100 - brightness}%`,
+        borderColor: brightness > 50 ? '#000' : '#FFF',
+      }) as ViewStyle,
+    [brightness, saturation],
+  );
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
@@ -384,14 +395,7 @@ export function ColorPicker({
               {/* 指示器 */}
               <View
                 pointerEvents="none"
-                style={[
-                  styles.panelIndicator,
-                  {
-                    left: `${saturation}%`,
-                    top: `${100 - brightness}%`,
-                    borderColor: brightness > 50 ? '#000' : '#FFF',
-                  },
-                ]}
+                style={[styles.panelIndicator, panelIndicatorStyle]}
               />
             </View>
 
