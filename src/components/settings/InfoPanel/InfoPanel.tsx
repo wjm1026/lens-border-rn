@@ -9,23 +9,19 @@ import {
 } from 'react-native';
 import {RotateCcw} from 'lucide-react-native';
 
+import {DEFAULT_EXIF_INFO} from '../../../config';
 import {colors} from '../../../theme';
 import {Slider, SegmentedControl, ColorPicker} from '../../ui';
 import CameraSelector from '../../CameraSelector';
 import InfoLineStyleCard from './InfoLineStyleCard';
 import type {FrameSettings, LineStyle} from '../../../types';
 import type {CameraPreset} from '../../../data/cameraPresets';
+import {normalizeCameraModel} from '../../../utils/exifUtils';
 
 const INFO_LAYOUT_OPTIONS = [
   {id: 'centered' as const, label: '居中双行'},
   {id: 'classic' as const, label: '经典左右'},
 ];
-
-const normalizeCameraModel = (model: string): string =>
-  model
-    .replace(/([A-Za-z])\s+(\d)/g, '$1$2')
-    .replace(/(\d)\s+([A-Za-z])/g, '$1$2')
-    .trim();
 
 interface InfoPanelProps {
   settings: FrameSettings;
@@ -227,7 +223,7 @@ export default function InfoPanel({
             style={styles.textInput}
             value={settings.customExif.model ?? ''}
             onChangeText={val => updateCustomExif('model', val)}
-            placeholder="NIKON Z9"
+            placeholder={DEFAULT_EXIF_INFO.model}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="characters"
           />
@@ -238,7 +234,7 @@ export default function InfoPanel({
             style={styles.textInput}
             value={settings.customExif.lens ?? ''}
             onChangeText={val => updateCustomExif('lens', val)}
-            placeholder="NIKKOR 28mm f/1.4"
+            placeholder={DEFAULT_EXIF_INFO.lens}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="characters"
           />
@@ -249,7 +245,7 @@ export default function InfoPanel({
             style={styles.textInput}
             value={settings.customExif.params ?? ''}
             onChangeText={val => updateCustomExif('params', val)}
-            placeholder="28.5mm f/7.1 1/60 ISO100"
+            placeholder={DEFAULT_EXIF_INFO.params}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
           />
@@ -260,7 +256,7 @@ export default function InfoPanel({
             style={styles.textInput}
             value={settings.customExif.date ?? ''}
             onChangeText={val => updateCustomExif('date', val)}
-            placeholder="2025/01/01 12:00"
+            placeholder={DEFAULT_EXIF_INFO.date}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
           />

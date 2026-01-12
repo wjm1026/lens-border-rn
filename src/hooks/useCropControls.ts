@@ -1,12 +1,11 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 
+import {DEFAULT_CROP_RECT, MIN_CROP_ZOOM} from '../config';
 import type {CropAspectId, CropRect} from '../types';
-
-const MIN_ZOOM = 1;
 
 export const useCropControls = (imageUri: string) => {
   const [cropAspect, setCropAspect] = useState<CropAspectId>('free');
-  const [cropZoom, setCropZoom] = useState(1);
+  const [cropZoom, setCropZoom] = useState(MIN_CROP_ZOOM);
   const [cropRotation, setCropRotation] = useState(0);
   const [cropFlip, setCropFlip] = useState({
     horizontal: false,
@@ -14,19 +13,14 @@ export const useCropControls = (imageUri: string) => {
   });
 
   // 默认全选 (0,0,1,1)
-  const [cropRect, setCropRect] = useState<CropRect>({
-    x: 0,
-    y: 0,
-    width: 1,
-    height: 1,
-  });
+  const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
 
   useEffect(() => {
-    setCropZoom(1);
+    setCropZoom(MIN_CROP_ZOOM);
     setCropRotation(0);
     setCropFlip({horizontal: false, vertical: false});
     setCropAspect('free');
-    setCropRect({x: 0, y: 0, width: 1, height: 1});
+    setCropRect(DEFAULT_CROP_RECT);
   }, [imageUri]);
 
   const cropAspectRatio = useMemo(() => {
@@ -59,7 +53,7 @@ export const useCropControls = (imageUri: string) => {
     cropFlip,
     cropRect,
     cropAspectRatio,
-    minZoom: MIN_ZOOM,
+    minZoom: MIN_CROP_ZOOM,
     setCropAspect,
     setCropZoom,
     setCropRotation,

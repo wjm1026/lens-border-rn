@@ -1,0 +1,3 @@
+export const PREVIEW_EXIF_PADDING = 40;
+export const PREVIEW_INFO_BASE_BOTTOM = 12;
+export const HIGH_RES_MAX_DIMENSION = 7200;

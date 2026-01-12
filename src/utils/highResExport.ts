@@ -34,15 +34,11 @@ export async function captureHighRes(
   // 对于更大屏幕设备，可以达到更高分辨率
   const targetWidth = Math.round(screenWidth * options.scale);
 
-  console.log(`[HighResExport] Capturing at ${targetWidth}px width (${options.scale}x)`);
-
   const uri = await captureRef(viewRef.current, {
     format: options.format,
     quality: options.quality,
     result: 'tmpfile',
     width: targetWidth,
   });
-
-  console.log(`[HighResExport] Captured: ${uri}`);
   return uri;
 }

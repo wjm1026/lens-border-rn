@@ -72,18 +72,11 @@ export const useSaveToCameraRoll = (
         return;
       }
 
-      console.log('[Export] Settings:', {
-        format: exportSettings.format,
-        quality: exportSettings.quality,
-      });
-
       const uri = await captureRef(viewRef.current, {
         format: exportSettings.format,
         quality: exportSettings.quality,
         result: 'tmpfile',
       });
-
-      console.log('[Export] Captured URI:', uri);
 
       if (!uri) {
         Alert.alert('保存失败', '生成图片失败，请重试。');
@@ -97,7 +90,6 @@ export const useSaveToCameraRoll = (
       );
     } catch (error) {
       const err = error as {code?: string; message?: string};
-      console.error('[Export] Error:', error);
       if (
         err?.code === 'E_PHOTO_LIBRARY_AUTH_DENIED' ||
         err?.code === 'E_PHOTO_LIBRARY_AUTH_RESTRICTED'

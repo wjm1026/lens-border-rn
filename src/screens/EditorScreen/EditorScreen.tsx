@@ -20,11 +20,12 @@ import {useCropControls} from '../../hooks/useCropControls';
 import {useImageAspectRatio} from '../../hooks/useImageAspectRatio';
 import {useExportWorkflow} from '../../hooks/useExportWorkflow';
 import {useFrameSettings} from '../../hooks/useFrameSettings';
+import {useInitialFrameSettings} from '../../hooks/useInitialFrameSettings';
 import {usePreviewAspectRatio} from '../../hooks/usePreviewAspectRatio';
 import type {ExportSettings} from '../../hooks/useSaveToCameraRoll';
 import EditorSettingsPanel from './EditorSettingsPanel';
 import {styles} from './styles';
-import {type ParsedExifData, DEFAULT_SETTINGS} from '../../types';
+import type {ParsedExifData} from '../../types';
 
 interface EditorScreenProps {
   imageUri: string;
@@ -40,36 +41,7 @@ export default function EditorScreen({
   const [activeTab, setActiveTab] = useState<TabId>('layout');
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-  // 初始化设置，注入 EXIF 数据
-  const initialSettings = useMemo(() => {
-    console.log('🏗️ [EditorScreen] 初始化设置, initialExif:', !!initialExif);
-
-    if (!initialExif) {
-      console.log('⚠️ [EditorScreen] 未发现 EXIF 数据，使用默认值');
-      return DEFAULT_SETTINGS;
-    }
-
-    // 拼接参数字符串: 24mm f/1.4 1/500 ISO100
-    // 目前 exify 返回数据里可能没有焦距(FocalLength)，如有需要后续再加
-    // 暂时格式：f/1.4 1/500 ISO100
-    const parts = [];
-    if (initialExif.FNumber) parts.push(`f/${initialExif.FNumber}`);
-    if (initialExif.ExposureTime) parts.push(initialExif.ExposureTime);
-    if (initialExif.ISO) parts.push(`ISO${initialExif.ISO}`);
-
-    const newSettings = {
-      ...DEFAULT_SETTINGS,
-      customExif: {
-        model: initialExif.Model,
-        lens: initialExif.LensModel,
-        params: parts.join(' '),
-        date: initialExif.DateTime,
-      },
-    };
-
-    console.log('✅ [EditorScreen] 生成初始设置:', newSettings.customExif);
-    return newSettings;
-  }, [initialExif]);
+  const initialSettings = useInitialFrameSettings(initialExif);
 
   const {settings, updateSettings, updateInfoOffset, resetInfoSettings} =
     useFrameSettings(initialSettings);

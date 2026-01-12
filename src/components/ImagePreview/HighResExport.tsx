@@ -1,6 +1,7 @@
 import React, {useMemo} from 'react';
 import {Dimensions, PixelRatio, StyleSheet, View} from 'react-native';
 
+import {HIGH_RES_MAX_DIMENSION, PREVIEW_EXIF_PADDING, PREVIEW_INFO_BASE_BOTTOM} from '../../config';
 import type {FrameSettings, CropRect} from '../../types';
 import {useScaledSettings} from '../../hooks/useScaledSettings';
 import {SharedPreview} from './SharedPreview';
@@ -20,13 +21,8 @@ interface HighResExportProps {
 // 基础宽度，用于计算导出的逻辑分辨率
 const BASE_WIDTH = Dimensions.get('window').width;
 
-// 基础常量，需要按比例放大的
-const BASE_EXIF_PADDING = 40;
-const BASE_INFO_BOTTOM = 12;
-
 // iOS 纹理安全限制 (通常是 8192，留出余量设为 7200/6000)
 // 对于 9:16 长图，4x 导出极易爆内存或超限
-const MAX_SAFE_DIMENSION = 7200;
 
 export const HighResExport = React.memo(
   ({
@@ -51,16 +47,11 @@ export const HighResExport = React.memo(
 
       const maxDim = Math.max(physicalWidth, physicalHeight);
 
-      if (maxDim > MAX_SAFE_DIMENSION) {
+      if (maxDim > HIGH_RES_MAX_DIMENSION) {
         // 如果超过限制，计算缩小比例
         // 比如想导出 8000px，限制 6000px -> scale 应该 * 0.75
-        const ratio = MAX_SAFE_DIMENSION / maxDim;
+        const ratio = HIGH_RES_MAX_DIMENSION / maxDim;
         const newScale = exportScale * ratio;
-        console.log(
-          `[HighResExport] Auto-downgrading scale from ${exportScale} to ${newScale.toFixed(
-            2,
-          )} (Max dim: ${maxDim} -> ${MAX_SAFE_DIMENSION})`,
-        );
         return newScale;
       }
       return exportScale;
@@ -87,8 +78,8 @@ export const HighResExport = React.memo(
     }, [safeScale, scaledSettings.padding, previewAspectRatio]);
 
     // 3. 计算缩放后的常量
-    const extraExifPadding = BASE_EXIF_PADDING * safeScale;
-    const baseBottom = BASE_INFO_BOTTOM * safeScale;
+    const extraExifPadding = PREVIEW_EXIF_PADDING * safeScale;
+    const baseBottom = PREVIEW_INFO_BASE_BOTTOM * safeScale;
 
     // 4. 双重检查触发 onReady
     React.useEffect(() => {

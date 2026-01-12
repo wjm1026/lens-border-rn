@@ -12,7 +12,7 @@ import {
 import {ChevronDown} from 'lucide-react-native';
 
 import {colors} from '../../../theme';
-import {FONT_OPTIONS} from '../../../types';
+import {FONT_OPTIONS} from '../../../config';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 const MENU_MAX_HEIGHT = 260;

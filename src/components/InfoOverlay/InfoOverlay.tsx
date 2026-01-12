@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import type {FrameSettings} from '../../types';
+import {DEFAULT_EXIF_INFO} from '../../config';
 
 interface InfoOverlayProps {
   settings: FrameSettings;
@@ -16,13 +17,6 @@ interface InfoOverlayProps {
   onOffsetChange: (offset: {x: number; y: number}) => void;
   baseBottom?: number;
 }
-
-const DEFAULT_INFO = {
-  model: 'NIKON Z9',
-  lens: 'NIKKOR 28mm f/1.4',
-  params: '28.5mm f/7.1 1/60 ISO100',
-  date: '2025/01/01 12:00',
-};
 
 const resolveInfoText = (value: string | undefined, fallback: string) => {
   if (!value) {
@@ -66,13 +60,22 @@ export default function InfoOverlay({
     [onOffsetChange],
   );
 
-  const model = resolveInfoText(settings.customExif.model, DEFAULT_INFO.model);
-  const lens = resolveInfoText(settings.customExif.lens, DEFAULT_INFO.lens);
+  const model = resolveInfoText(
+    settings.customExif.model,
+    DEFAULT_EXIF_INFO.model,
+  );
+  const lens = resolveInfoText(
+    settings.customExif.lens,
+    DEFAULT_EXIF_INFO.lens,
+  );
   const params = resolveInfoText(
     settings.customExif.params,
-    DEFAULT_INFO.params,
+    DEFAULT_EXIF_INFO.params,
   );
-  const date = resolveInfoText(settings.customExif.date, DEFAULT_INFO.date);
+  const date = resolveInfoText(
+    settings.customExif.date,
+    DEFAULT_EXIF_INFO.date,
+  );
 
   const line1Style = useMemo(
     () => ({
@@ -128,7 +131,13 @@ export default function InfoOverlay({
       ],
       alignItems,
     }),
-    [alignItems, baseBottom, framePadding, settings.infoOffset.x, settings.infoOffset.y],
+    [
+      alignItems,
+      baseBottom,
+      framePadding,
+      settings.infoOffset.x,
+      settings.infoOffset.y,
+    ],
   );
 
   if (!settings.showExif) {

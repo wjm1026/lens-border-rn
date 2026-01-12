@@ -1,6 +1,7 @@
 import {useCallback, useState} from 'react';
 
-import {DEFAULT_SETTINGS, type FrameSettings} from '../types';
+import {DEFAULT_SETTINGS} from '../config';
+import type {FrameSettings} from '../types';
 
 export const useFrameSettings = (
   initialSettings: FrameSettings = DEFAULT_SETTINGS,

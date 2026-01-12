@@ -1,6 +1,7 @@
 import React, {useMemo} from 'react';
 import {Image, StyleSheet, View} from 'react-native';
 
+import {DEFAULT_CROP_RECT, PREVIEW_EXIF_PADDING, PREVIEW_INFO_BASE_BOTTOM} from '../../config';
 import {colors} from '../../theme';
 import type {FrameSettings, CropRect} from '../../types';
 import {BackgroundLayer} from '../BackgroundLayer';
@@ -26,12 +27,12 @@ export const SharedPreview = React.memo(
     settings,
     viewportSize,
     framePadding,
-    cropRect = {x: 0, y: 0, width: 1, height: 1},
+    cropRect = DEFAULT_CROP_RECT,
     cropRotation = 0,
     cropFlip = {horizontal: false, vertical: false},
     onInfoOffsetChange = () => {},
-    exifPadding = 40,
-    infoBaseBottom = 12,
+    exifPadding = PREVIEW_EXIF_PADDING,
+    infoBaseBottom = PREVIEW_INFO_BASE_BOTTOM,
     onImageLoad,
   }: SharedPreviewProps) => {
     const imageShadowStyle = useMemo(() => {

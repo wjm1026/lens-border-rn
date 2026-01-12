@@ -6,15 +6,14 @@
  * @FilePath: /code/lens-border-rn/src/screens/LaunchScreen/LaunchScreen.tsx
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-import React, {useCallback} from 'react';
-import {Alert, StatusBar, Text, TouchableOpacity, View} from 'react-native';
+import React from 'react';
+import {StatusBar, Text, TouchableOpacity, View} from 'react-native';
 import {Upload} from 'lucide-react-native';
-import {launchImageLibrary} from 'react-native-image-picker';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {colors} from '../../theme';
 import {styles} from './styles';
-import {parseExif} from '../../utils/exifUtils';
+import {useImagePicker} from '../../hooks/useImagePicker';
 
 import {type ParsedExifData} from '../../types';
 
@@ -23,46 +22,7 @@ interface LaunchScreenProps {
 }
 
 export default function LaunchScreen({onImagePicked}: LaunchScreenProps) {
-  const handlePicker = useCallback(async () => {
-    try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        includeExtra: true,
-        selectionLimit: 1,
-      });
-
-      if (result.didCancel) {
-        return;
-      }
-
-      if (result.errorCode) {
-        Alert.alert(
-          '选择失败',
-          result.errorMessage ?? '请检查相册权限后重试。',
-        );
-        return;
-      }
-
-      const selectedUri = result.assets?.[0]?.uri;
-
-      if (selectedUri) {
-        // 尝试解析 EXIF
-        parseExif(selectedUri)
-          .then((data: ParsedExifData) => {
-            console.log('--- [LaunchScreen] EXIF 解析完成 ---', data);
-            // 成功，带数据跳转
-            onImagePicked(selectedUri, data);
-          })
-          .catch(err => {
-            console.error('--- [LaunchScreen] 解析出错 ---:', err);
-            // 失败，仅带 URI 跳转
-            onImagePicked(selectedUri);
-          });
-      }
-    } catch {
-      Alert.alert('选择失败', '请稍后重试。');
-    }
-  }, [onImagePicked]);
+  const handlePicker = useImagePicker({onImagePicked});
 
   return (
     <SafeAreaView style={styles.container}>

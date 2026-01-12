@@ -6,6 +6,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Image, PanResponder, StyleSheet, View} from 'react-native';
 
+import {DEFAULT_CROP_RECT, MAX_CROP_ZOOM, MIN_CROP_SIZE, MIN_CROP_ZOOM} from '../../config';
 import type {CropRect} from '../../types';
 
 interface CropperProps {
@@ -22,9 +23,6 @@ const EDGE_PADDING = 20;
 const CORNER_LENGTH = 20;
 const CORNER_THICKNESS = 3;
 const HANDLE_SIZE = 44;
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 5;
-const MIN_CROP_SIZE = 60;
 
 export const Cropper: React.FC<CropperProps> = ({
   imageUri,
@@ -186,7 +184,7 @@ export const Cropper: React.FC<CropperProps> = ({
       const imgH = baseFitSize.height * currentZoom;
 
       if (imgW === 0 || imgH === 0) {
-        return {x: 0, y: 0, width: 1, height: 1};
+        return DEFAULT_CROP_RECT;
       }
 
       const cropCenterX = -offset.x;
@@ -297,8 +295,8 @@ export const Cropper: React.FC<CropperProps> = ({
 
             const scale = distance / gestureRef.current.startDistance;
             const newZoom = Math.max(
-              MIN_ZOOM,
-              Math.min(MAX_ZOOM, gestureRef.current.startZoom * scale),
+              MIN_CROP_ZOOM,
+              Math.min(MAX_CROP_ZOOM, gestureRef.current.startZoom * scale),
             );
             onZoomChange(newZoom);
 

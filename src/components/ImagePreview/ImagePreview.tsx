@@ -7,9 +7,8 @@ import {
 } from 'react-native';
 
 import type {FrameSettings, CropRect} from '../../types';
+import {DEFAULT_CROP_RECT, PREVIEW_EXIF_PADDING, PREVIEW_INFO_BASE_BOTTOM} from '../../config';
 import {SharedPreview} from './SharedPreview';
-
-const EXIF_PADDING_EXTRA = 40;
 
 interface ImagePreviewProps {
   imageUri: string;
@@ -30,7 +29,7 @@ export default function ImagePreview({
   framePadding,
   captureRef,
   onInfoOffsetChange,
-  cropRect = {x: 0, y: 0, width: 1, height: 1},
+  cropRect = DEFAULT_CROP_RECT,
   cropRotation = 0,
   cropFlip = {horizontal: false, vertical: false},
 }: ImagePreviewProps) {
@@ -54,7 +53,7 @@ export default function ImagePreview({
   const viewportSize = useMemo(() => {
     const baseWidth = previewAreaSize.width || width;
     const baseHeight = previewAreaSize.height || 0;
-    const exifPadding = settings.showExif ? EXIF_PADDING_EXTRA : 0;
+    const exifPadding = settings.showExif ? PREVIEW_EXIF_PADDING : 0;
     const maxWidth = Math.max(0, baseWidth - framePadding * 2);
     const maxHeight = Math.max(0, baseHeight - framePadding * 2 - exifPadding);
 
@@ -88,8 +87,8 @@ export default function ImagePreview({
           cropRotation={cropRotation}
           cropFlip={cropFlip}
           onInfoOffsetChange={onInfoOffsetChange}
-          exifPadding={EXIF_PADDING_EXTRA}
-          infoBaseBottom={12}
+          exifPadding={PREVIEW_EXIF_PADDING}
+          infoBaseBottom={PREVIEW_INFO_BASE_BOTTOM}
         />
       </View>
     </View>

@@ -19,7 +19,6 @@ export default function App() {
   } | null>(null);
 
   const handleImagePicked = (uri: string, data?: ParsedExifData) => {
-    console.log('🚀 [App] 接收到图片并准备跳转:', uri, !!data);
     setImageSource({uri, exif: data});
   };
 
