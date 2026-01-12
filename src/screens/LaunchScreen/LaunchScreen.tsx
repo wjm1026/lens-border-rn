@@ -2,12 +2,12 @@
  * @Author: wjm 791215714@qq.com
  * @Date: 2026-01-11 19:34:18
  * @LastEditors: wjm 791215714@qq.com
- * @LastEditTime: 2026-01-12 22:48:19
+ * @LastEditTime: 2026-01-13 00:11:56
  * @FilePath: /code/lens-border-rn/src/screens/LaunchScreen/LaunchScreen.tsx
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 import React from 'react';
-import {StatusBar, Text, TouchableOpacity, View} from 'react-native';
+import {StatusBar, Text, TouchableOpacity, View, Image} from 'react-native';
 import {Upload} from 'lucide-react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -28,6 +28,10 @@ export default function LaunchScreen({onImagePicked}: LaunchScreenProps) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <View style={styles.header}>
+        <Image
+          source={require('../../../assets/icon/logo.png')}
+          style={styles.logoImage}
+        />
         <Text style={styles.logoText}>
           Lens<Text style={styles.logoHighlight}>Border</Text>
         </Text>

@@ -14,6 +14,12 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 60,
   },
+  logoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 22,
+    marginBottom: 20,
+  },
   logoText: {
     fontSize: 40,
     fontWeight: '900',
