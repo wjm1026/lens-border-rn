@@ -28,14 +28,14 @@ interface ColorPickerProps {
 const PRESET_COLORS = [
   '#FFFFFF',
   '#000000',
-  '#FF4757',
-  '#FF7F50',
-  '#FBBF24',
+  '#F43F5E',
+  '#F97316',
+  '#EAB308',
   '#22C55E',
   '#3B82F6',
   '#8B5CF6',
   '#EC4899',
-  '#14B8A6',
+  '#6B7280',
 ];
 
 // 颜色转换工具函数

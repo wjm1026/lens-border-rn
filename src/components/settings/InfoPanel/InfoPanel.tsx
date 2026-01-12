@@ -11,23 +11,21 @@ import {RotateCcw} from 'lucide-react-native';
 
 import {colors} from '../../../theme';
 import {Slider, SegmentedControl, ColorPicker} from '../../ui';
+import CameraSelector from '../../CameraSelector';
+import InfoLineStyleCard from './InfoLineStyleCard';
 import type {FrameSettings, LineStyle} from '../../../types';
-
-const TEXT_COLORS = [
-  '#000000',
-  '#111827',
-  '#6B7280',
-  '#FFFFFF',
-  '#F5F5F5',
-  '#FBBF24',
-  '#60A5FA',
-  '#34D399',
-];
+import type {CameraPreset} from '../../../data/cameraPresets';
 
 const INFO_LAYOUT_OPTIONS = [
   {id: 'centered' as const, label: '居中双行'},
   {id: 'classic' as const, label: '经典左右'},
 ];
+
+const normalizeCameraModel = (model: string): string =>
+  model
+    .replace(/([A-Za-z])\s+(\d)/g, '$1$2')
+    .replace(/(\d)\s+([A-Za-z])/g, '$1$2')
+    .trim();
 
 interface InfoPanelProps {
   settings: FrameSettings;
@@ -36,12 +34,14 @@ interface InfoPanelProps {
     value: FrameSettings[K],
   ) => void;
   onReset: () => void;
+  exifCamera?: string;
 }
 
 export default function InfoPanel({
   settings,
   updateSettings,
   onReset,
+  exifCamera,
 }: InfoPanelProps) {
   const updateCustomExif = useCallback(
     (key: keyof FrameSettings['customExif'], value: string) => {
@@ -57,6 +57,30 @@ export default function InfoPanel({
     },
     [settings, updateSettings],
   );
+
+  const handleCameraSelect = useCallback(
+    (preset: CameraPreset | null) => {
+      if (preset) {
+        updateSettings('selectedCameraPresetId', preset.id);
+        updateSettings('customExif', {
+          ...settings.customExif,
+          model: normalizeCameraModel(preset.model),
+          lens: preset.defaultLens || settings.customExif.lens,
+        });
+        return;
+      }
+
+      updateSettings('selectedCameraPresetId', null);
+      updateSettings('customExif', {
+        ...settings.customExif,
+        model: undefined,
+        lens: undefined,
+      });
+    },
+    [settings.customExif, updateSettings],
+  );
+
+  const cameraHint = exifCamera;
 
   return (
     <View style={styles.container}>
@@ -88,38 +112,25 @@ export default function InfoPanel({
         onChange={val => updateSettings('infoLayout', val)}
       />
 
+      <View style={styles.sectionBlock}>
+        <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>
+          相机型号
+        </Text>
+        <CameraSelector
+          onSelect={handleCameraSelect}
+          selectedId={settings.selectedCameraPresetId ?? null}
+          currentExifCamera={cameraHint}
+        />
+        <Text style={styles.helperText}>预设可快速更换品牌和镜头</Text>
+      </View>
+
       <View style={styles.sectionRow}>
         <Text style={styles.sectionLabel}>文字颜色</Text>
-        <View style={styles.colorPickerWrapper}>
-          <Text style={styles.sectionValue}>
-            {settings.textColor.toUpperCase()}
-          </Text>
-          <ColorPicker
-            color={settings.textColor}
-            onChange={color => updateSettings('textColor', color)}
-            size={32}
-          />
-        </View>
-      </View>
-      <View style={styles.swatchRow}>
-        {TEXT_COLORS.map(color => {
-          const isActive =
-            settings.textColor.toLowerCase() === color.toLowerCase();
-          return (
-            <TouchableOpacity
-              key={color}
-              style={[
-                styles.swatch,
-                {backgroundColor: color},
-                isActive && styles.swatchActive,
-              ]}
-              onPress={() => updateSettings('textColor', color)}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={`文字颜色 ${color}`}
-            />
-          );
-        })}
+        <ColorPicker
+          color={settings.textColor}
+          onChange={color => updateSettings('textColor', color)}
+          size={40}
+        />
       </View>
 
       <Slider
@@ -144,102 +155,117 @@ export default function InfoPanel({
         />
       )}
 
-      <Text style={styles.sectionLabel}>自定义信息</Text>
-      <View style={styles.field}>
-        <Text style={styles.fieldLabel}>相机型号</Text>
-        <TextInput
-          style={styles.textInput}
-          value={settings.customExif.model ?? ''}
-          onChangeText={val => updateCustomExif('model', val)}
-          placeholder="NIKON Z9"
-          placeholderTextColor={colors.textMuted}
-          autoCapitalize="characters"
-        />
-      </View>
-      <View style={styles.field}>
-        <Text style={styles.fieldLabel}>镜头信息</Text>
-        <TextInput
-          style={styles.textInput}
-          value={settings.customExif.lens ?? ''}
-          onChangeText={val => updateCustomExif('lens', val)}
-          placeholder="NIKKOR 28mm f/1.4"
-          placeholderTextColor={colors.textMuted}
-          autoCapitalize="characters"
-        />
-      </View>
-      <View style={styles.field}>
-        <Text style={styles.fieldLabel}>拍摄参数</Text>
-        <TextInput
-          style={styles.textInput}
-          value={settings.customExif.params ?? ''}
-          onChangeText={val => updateCustomExif('params', val)}
-          placeholder="28.5mm f/7.1 1/60 ISO100"
-          placeholderTextColor={colors.textMuted}
-          autoCapitalize="none"
-        />
-      </View>
-      <View style={styles.field}>
-        <Text style={styles.fieldLabel}>拍摄日期</Text>
-        <TextInput
-          style={styles.textInput}
-          value={settings.customExif.date ?? ''}
-          onChangeText={val => updateCustomExif('date', val)}
-          placeholder="2025/01/01 12:00"
-          placeholderTextColor={colors.textMuted}
-          autoCapitalize="none"
-        />
-      </View>
+      {settings.infoLayout === 'centered' && (
+        <View style={styles.lineStyleSection}>
+          <InfoLineStyleCard
+            title="第一行: 相机型号"
+            fontId={settings.line1Style.fontId}
+            onFontIdChange={fontId =>
+              updateLineStyle('line1Style', {fontId})
+            }
+            fontSize={settings.line1Style.fontSize}
+            onFontSizeChange={val =>
+              updateLineStyle('line1Style', {fontSize: val})
+            }
+            maxFontSize={48}
+          >
+            <Slider
+              label="字重"
+              value={settings.line1Style.fontWeight}
+              min={100}
+              max={900}
+              step={100}
+              onChange={val => updateLineStyle('line1Style', {fontWeight: val})}
+            />
 
-      <View style={styles.divider} />
-      <Text style={styles.sectionLabel}>第一行样式</Text>
-      <Slider
-        label="字号"
-        value={settings.line1Style.fontSize}
-        min={12}
-        max={48}
-        step={1}
-        onChange={val => updateLineStyle('line1Style', {fontSize: val})}
-        unit="px"
-      />
-      <Slider
-        label="字重"
-        value={settings.line1Style.fontWeight}
-        min={100}
-        max={900}
-        step={100}
-        onChange={val => updateLineStyle('line1Style', {fontWeight: val})}
-      />
-      <Slider
-        label="间距"
-        value={Math.round(settings.line1Style.letterSpacing * 100)}
-        min={-5}
-        max={100}
-        step={1}
-        onChange={val =>
-          updateLineStyle('line1Style', {letterSpacing: val / 100})
-        }
-      />
+            <Slider
+              label="间距"
+              value={Math.round(settings.line1Style.letterSpacing * 100)}
+              min={-5}
+              max={100}
+              step={1}
+              onChange={val =>
+                updateLineStyle('line1Style', {letterSpacing: val / 100})
+              }
+            />
+          </InfoLineStyleCard>
 
-      <View style={styles.divider} />
-      <Text style={styles.sectionLabel}>第二行样式</Text>
-      <Slider
-        label="字号"
-        value={settings.line2Style.fontSize}
-        min={10}
-        max={36}
-        step={1}
-        onChange={val => updateLineStyle('line2Style', {fontSize: val})}
-        unit="px"
-      />
-      <Slider
-        label="透明度"
-        value={Math.round(settings.line2Style.opacity * 100)}
-        min={0}
-        max={100}
-        step={1}
-        onChange={val => updateLineStyle('line2Style', {opacity: val / 100})}
-        unit="%"
-      />
+          <InfoLineStyleCard
+            title="第二行: 拍摄参数"
+            fontId={settings.line2Style.fontId}
+            onFontIdChange={fontId =>
+              updateLineStyle('line2Style', {fontId})
+            }
+            fontSize={settings.line2Style.fontSize}
+            onFontSizeChange={val =>
+              updateLineStyle('line2Style', {fontSize: val})
+            }
+            maxFontSize={36}
+          >
+            <Slider
+              label="不透明度"
+              value={Math.round(settings.line2Style.opacity * 100)}
+              min={0}
+              max={100}
+              step={1}
+              onChange={val =>
+                updateLineStyle('line2Style', {opacity: val / 100})
+              }
+              unit="%"
+            />
+          </InfoLineStyleCard>
+        </View>
+      )}
+
+      <View style={styles.sectionBlock}>
+        <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>
+          自定义信息
+        </Text>
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>相机型号</Text>
+          <TextInput
+            style={styles.textInput}
+            value={settings.customExif.model ?? ''}
+            onChangeText={val => updateCustomExif('model', val)}
+            placeholder="NIKON Z9"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="characters"
+          />
+        </View>
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>镜头信息</Text>
+          <TextInput
+            style={styles.textInput}
+            value={settings.customExif.lens ?? ''}
+            onChangeText={val => updateCustomExif('lens', val)}
+            placeholder="NIKKOR 28mm f/1.4"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="characters"
+          />
+        </View>
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>拍摄参数</Text>
+          <TextInput
+            style={styles.textInput}
+            value={settings.customExif.params ?? ''}
+            onChangeText={val => updateCustomExif('params', val)}
+            placeholder="28.5mm f/7.1 1/60 ISO100"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>拍摄日期</Text>
+          <TextInput
+            style={styles.textInput}
+            value={settings.customExif.date ?? ''}
+            onChangeText={val => updateCustomExif('date', val)}
+            placeholder="2025/01/01 12:00"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+          />
+        </View>
+      </View>
     </View>
   );
 }
@@ -252,33 +278,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 20,
   },
   sectionLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
+  },
+  sectionLabelSpaced: {
     marginBottom: 12,
-  },
-  sectionValue: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginRight: 12,
-  },
-  colorPickerWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   resetButton: {
     flexDirection: 'row',
@@ -296,38 +306,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    backgroundColor: colors.surface,
+    marginBottom: 16,
   },
   toggleLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
-  swatchRow: {
+  sectionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  swatch: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: 12,
-    marginBottom: 12,
+  sectionBlock: {
+    marginBottom: 20,
   },
-  swatchActive: {
-    borderWidth: 2,
-    borderColor: colors.accent,
+  helperText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  lineStyleSection: {
+    paddingBottom: 8,
   },
   field: {
     marginBottom: 12,
@@ -349,10 +356,5 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     backgroundColor: colors.surface,
     fontSize: 12,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginBottom: 12,
   },
 });
