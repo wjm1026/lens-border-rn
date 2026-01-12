@@ -2,7 +2,7 @@ import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 
 import {colors} from '../../../theme';
-import {Slider} from '../../ui/Slider';
+import {Slider, ColorPicker} from '../../ui';
 import type {FrameSettings} from '../../../types';
 
 const BORDER_COLORS = [
@@ -79,9 +79,16 @@ export default function BorderPanel({
 
       <View style={styles.colorHeader}>
         <Text style={styles.colorLabel}>颜色</Text>
-        <Text style={styles.colorValue}>
-          {settings.borderColor.toUpperCase()}
-        </Text>
+        <View style={styles.colorPickerWrapper}>
+          <Text style={styles.colorValue}>
+            {settings.borderColor.toUpperCase()}
+          </Text>
+          <ColorPicker
+            color={settings.borderColor}
+            onChange={color => updateSettings('borderColor', color)}
+            size={32}
+          />
+        </View>
       </View>
       <View style={styles.swatchRow}>
         {BORDER_COLORS.map(color => {
@@ -144,6 +151,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+    marginRight: 12,
+  },
+  colorPickerWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   swatchRow: {
     flexDirection: 'row',

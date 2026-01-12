@@ -101,6 +101,8 @@ export default function Slider({
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onPanResponderTerminationRequest: () => false, // 不允许其他响应者抢走手势
+        onShouldBlockNativeResponder: () => true, // 阻止原生滚动
         onPanResponderGrant: evt => {
           const pageX = evt.nativeEvent.pageX;
           trackRef.current?.measureInWindow((left, _top, width) => {

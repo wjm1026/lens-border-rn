@@ -3,8 +3,7 @@ import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import Svg, {Defs, LinearGradient, Rect, Stop} from 'react-native-svg';
 
 import {colors} from '../../../theme';
-import {Slider} from '../../ui/Slider';
-import {SegmentedControl} from '../../ui/SegmentedControl';
+import {Slider, SegmentedControl, ColorPicker} from '../../ui';
 import type {FrameSettings} from '../../../types';
 import {getGradientPoints} from '../../../utils/gradient';
 
@@ -82,13 +81,21 @@ export default function BackgroundPanel({
         onChange={val => updateSettings('backgroundType', val)}
       />
 
+      {/* 纯色模式 */}
       {settings.backgroundType === 'color' && (
         <>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>填充颜色</Text>
-            <Text style={styles.sectionValue}>
-              {settings.backgroundColor.toUpperCase()}
-            </Text>
+            <View style={styles.colorPickerWrapper}>
+              <Text style={styles.sectionValue}>
+                {settings.backgroundColor.toUpperCase()}
+              </Text>
+              <ColorPicker
+                color={settings.backgroundColor}
+                onChange={color => updateSettings('backgroundColor', color)}
+                size={32}
+              />
+            </View>
           </View>
           <View style={styles.swatchRow}>
             {BACKGROUND_COLORS.map(color => {
@@ -112,8 +119,10 @@ export default function BackgroundPanel({
         </>
       )}
 
+      {/* 渐变模式 */}
       {settings.backgroundType === 'gradient' && (
         <>
+          {/* 渐变预览 */}
           <View style={styles.gradientPreview}>
             <Svg width="100%" height="100%">
               <Defs>
@@ -158,62 +167,48 @@ export default function BackgroundPanel({
             unit="°"
           />
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>起始颜色</Text>
-            <Text style={styles.sectionValue}>
-              {settings.gradientStartColor.toUpperCase()}
-            </Text>
-          </View>
-          <View style={styles.swatchRow}>
-            {BACKGROUND_COLORS.map(color => {
-              const isActive = normalizedStart === color.toLowerCase();
-              return (
-                <TouchableOpacity
-                  key={`start-${color}`}
-                  style={[
-                    styles.swatch,
-                    {backgroundColor: color},
-                    isActive && styles.swatchActive,
-                  ]}
-                  onPress={() =>
+          {/* 起始颜色和结束颜色 - 并排显示 */}
+          <View style={styles.colorPickerRow}>
+            <View style={styles.colorPickerItem}>
+              <View style={styles.colorPickerHeader}>
+                <ColorPicker
+                  color={settings.gradientStartColor}
+                  onChange={color =>
                     updateGradient(color, settings.gradientEndColor)
                   }
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`渐变起始颜色 ${color}`}
+                  size={42}
                 />
-              );
-            })}
-          </View>
+              </View>
+              <Text style={styles.colorPickerLabel}>起始颜色</Text>
+              <Text style={styles.colorPickerValue}>
+                {settings.gradientStartColor.toUpperCase()}
+              </Text>
+            </View>
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>结束颜色</Text>
-            <Text style={styles.sectionValue}>
-              {settings.gradientEndColor.toUpperCase()}
-            </Text>
-          </View>
-          <View style={styles.swatchRow}>
-            {BACKGROUND_COLORS.map(color => {
-              const isActive = normalizedEnd === color.toLowerCase();
-              return (
-                <TouchableOpacity
-                  key={`end-${color}`}
-                  style={[
-                    styles.swatch,
-                    {backgroundColor: color},
-                    isActive && styles.swatchActive,
-                  ]}
-                  onPress={() =>
+            {/* 箭头 */}
+            <View style={styles.arrowContainer}>
+              <View style={styles.arrowLine} />
+              <View style={styles.arrowHead} />
+            </View>
+
+            <View style={styles.colorPickerItem}>
+              <View style={styles.colorPickerHeader}>
+                <ColorPicker
+                  color={settings.gradientEndColor}
+                  onChange={color =>
                     updateGradient(settings.gradientStartColor, color)
                   }
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`渐变结束颜色 ${color}`}
+                  size={42}
                 />
-              );
-            })}
+              </View>
+              <Text style={styles.colorPickerLabel}>结束颜色</Text>
+              <Text style={styles.colorPickerValue}>
+                {settings.gradientEndColor.toUpperCase()}
+              </Text>
+            </View>
           </View>
 
+          {/* 预设渐变 */}
           <Text style={styles.sectionLabel}>预设渐变</Text>
           <View style={styles.swatchRow}>
             {PRESET_GRADIENTS.map((preset, index) => {
@@ -233,7 +228,12 @@ export default function BackgroundPanel({
                   accessibilityLabel={`预设渐变 ${index + 1}`}>
                   <Svg width="100%" height="100%">
                     <Defs>
-                      <LinearGradient id="presetGradient" x1="0" y1="0" x2="1" y2="1">
+                      <LinearGradient
+                        id={`presetGrad-${index}`}
+                        x1="0"
+                        y1="0"
+                        x2="1"
+                        y2="1">
                         <Stop offset="0" stopColor={preset.start} />
                         <Stop offset="1" stopColor={preset.end} />
                       </LinearGradient>
@@ -243,7 +243,7 @@ export default function BackgroundPanel({
                       y="0"
                       width="100%"
                       height="100%"
-                      fill="url(#presetGradient)"
+                      fill={`url(#presetGrad-${index})`}
                     />
                   </Svg>
                 </TouchableOpacity>
@@ -253,6 +253,7 @@ export default function BackgroundPanel({
         </>
       )}
 
+      {/* 模糊模式 */}
       {settings.backgroundType === 'blur' && (
         <Slider
           label="模糊强度"
@@ -311,6 +312,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+    marginRight: 12,
+  },
+  colorPickerWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   swatchRow: {
     flexDirection: 'row',
@@ -363,10 +369,62 @@ const styles = StyleSheet.create({
     color: colors.white,
     letterSpacing: 0.6,
   },
+  colorPickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 16,
+  },
+  colorPickerItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  colorPickerHeader: {
+    marginBottom: 8,
+  },
+  colorPickerLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  colorPickerValue: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    letterSpacing: 0.4,
+  },
+  arrowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 34, // 与颜色圆对齐（补偿下方标签和颜色值的高度）
+  },
+  arrowLine: {
+    width: 24,
+    height: 2,
+    backgroundColor: colors.textMuted,
+    borderRadius: 1,
+  },
+  arrowHead: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 5,
+    borderBottomWidth: 5,
+    borderLeftWidth: 6,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: colors.textMuted,
+    marginLeft: -1,
+  },
+
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginBottom: 12,
+    marginVertical: 16,
   },
   brightnessHints: {
     flexDirection: 'row',

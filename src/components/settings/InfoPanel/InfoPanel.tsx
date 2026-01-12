@@ -10,8 +10,7 @@ import {
 import {RotateCcw} from 'lucide-react-native';
 
 import {colors} from '../../../theme';
-import {Slider} from '../../ui/Slider';
-import {SegmentedControl} from '../../ui/SegmentedControl';
+import {Slider, SegmentedControl, ColorPicker} from '../../ui';
 import type {FrameSettings, LineStyle} from '../../../types';
 
 const TEXT_COLORS = [
@@ -91,13 +90,21 @@ export default function InfoPanel({
 
       <View style={styles.sectionRow}>
         <Text style={styles.sectionLabel}>文字颜色</Text>
-        <Text style={styles.sectionValue}>
-          {settings.textColor.toUpperCase()}
-        </Text>
+        <View style={styles.colorPickerWrapper}>
+          <Text style={styles.sectionValue}>
+            {settings.textColor.toUpperCase()}
+          </Text>
+          <ColorPicker
+            color={settings.textColor}
+            onChange={color => updateSettings('textColor', color)}
+            size={32}
+          />
+        </View>
       </View>
       <View style={styles.swatchRow}>
         {TEXT_COLORS.map(color => {
-          const isActive = settings.textColor.toLowerCase() === color.toLowerCase();
+          const isActive =
+            settings.textColor.toLowerCase() === color.toLowerCase();
           return (
             <TouchableOpacity
               key={color}
@@ -230,9 +237,7 @@ export default function InfoPanel({
         min={0}
         max={100}
         step={1}
-        onChange={val =>
-          updateLineStyle('line2Style', {opacity: val / 100})
-        }
+        onChange={val => updateLineStyle('line2Style', {opacity: val / 100})}
         unit="%"
       />
     </View>
@@ -269,6 +274,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+    marginRight: 12,
+  },
+  colorPickerWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   resetButton: {
     flexDirection: 'row',
