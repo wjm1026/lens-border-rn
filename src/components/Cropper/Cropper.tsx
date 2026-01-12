@@ -16,9 +16,11 @@ import type {CropRect} from '../../types';
 
 interface CropperProps {
   imageUri: string;
+  initialCropRect?: CropRect;
   onCropChange: (rect: CropRect) => void;
   aspectRatio?: number; // undefined means free
   rotation: number;
+  onRotationChange: (rotation: number) => void;
   zoom: number;
   onZoomChange: (zoom: number) => void;
   flip: {horizontal: boolean; vertical: boolean};
@@ -31,9 +33,11 @@ const HANDLE_SIZE = 44;
 
 export const Cropper: React.FC<CropperProps> = ({
   imageUri,
+  initialCropRect,
   onCropChange,
   aspectRatio,
   rotation,
+  onRotationChange,
   zoom,
   onZoomChange,
   flip,
@@ -249,26 +253,60 @@ export const Cropper: React.FC<CropperProps> = ({
       !isInitializedRef.current
     ) {
       isInitializedRef.current = true;
-      const newCropRect = calculateCropRect({x: 0, y: 0}, zoom, cropBoxSize);
-      onCropChange(newCropRect);
+
+      if (initialCropRect && initialCropRect.width > 0) {
+        // 如果有初始位置，反向计算内部状态
+        const imgW = baseFitSize.width * zoom;
+        const imgH = baseFitSize.height * zoom;
+
+        // 计算位移: -(normCenterX - 0.5) * imgW
+        const normCenterX = initialCropRect.x + initialCropRect.width / 2;
+        const normCenterY = initialCropRect.y + initialCropRect.height / 2;
+        const offsetX = -(normCenterX - 0.5) * imgW;
+        const offsetY = -(normCenterY - 0.5) * imgH;
+
+        setImageOffset({x: offsetX, y: offsetY});
+
+        // 如果是自由比例模式，还原框大小
+        if (aspectRatio === undefined) {
+          setFreeCropSize({
+            width: initialCropRect.width * imgW,
+            height: initialCropRect.height * imgH,
+          });
+        }
+      } else {
+        // 默认全选
+        const newCropRect = calculateCropRect({x: 0, y: 0}, zoom, cropBoxSize);
+        onCropChange(newCropRect);
+      }
     }
-  }, [baseFitSize, calculateCropRect, cropBoxSize, onCropChange, zoom]);
+  }, [
+    baseFitSize,
+    calculateCropRect,
+    cropBoxSize,
+    onCropChange,
+    zoom,
+    initialCropRect,
+    aspectRatio,
+  ]);
 
   // 手势状态
   const gestureRef = useRef({
     startOffset: {x: 0, y: 0},
     startZoom: 1,
     startDistance: 0,
+    startRotation: 0,
+    startAngle: 0,
     isPinching: false,
     startCropSize: {width: 0, height: 0},
   });
 
-  const stateRef = useRef({zoom, imageOffset, cropBoxSize});
+  const stateRef = useRef({zoom, rotation, imageOffset, cropBoxSize});
   useEffect(() => {
-    stateRef.current = {zoom, imageOffset, cropBoxSize};
-  }, [zoom, imageOffset, cropBoxSize]);
+    stateRef.current = {zoom, rotation, imageOffset, cropBoxSize};
+  }, [zoom, rotation, imageOffset, cropBoxSize]);
 
-  // 图片拖动和双指缩放手势
+  // 图片拖动和双指缩放/旋转手势
   const imageGestureResponder = useMemo(
     () =>
       PanResponder.create({
@@ -278,15 +316,19 @@ export const Cropper: React.FC<CropperProps> = ({
           const touches = evt.nativeEvent.touches;
           gestureRef.current.startOffset = {...stateRef.current.imageOffset};
           gestureRef.current.startZoom = stateRef.current.zoom;
+          gestureRef.current.startRotation = stateRef.current.rotation;
 
           if (touches.length === 2) {
             const dx = touches[0].pageX - touches[1].pageX;
             const dy = touches[0].pageY - touches[1].pageY;
             gestureRef.current.startDistance = Math.sqrt(dx * dx + dy * dy);
+            gestureRef.current.startAngle =
+              Math.atan2(dy, dx) * (180 / Math.PI);
             gestureRef.current.isPinching = true;
           } else {
             gestureRef.current.isPinching = false;
             gestureRef.current.startDistance = 0;
+            gestureRef.current.startAngle = 0;
           }
         },
         onPanResponderMove: (evt, gestureState) => {
@@ -297,6 +339,7 @@ export const Cropper: React.FC<CropperProps> = ({
             const dx = touches[0].pageX - touches[1].pageX;
             const dy = touches[0].pageY - touches[1].pageY;
             const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
             // 如果是刚刚开始识别到双指，或者之前是单指模式，则初始化双指状态
             if (
@@ -305,19 +348,29 @@ export const Cropper: React.FC<CropperProps> = ({
             ) {
               gestureRef.current.isPinching = true;
               gestureRef.current.startDistance = distance;
+              gestureRef.current.startAngle = angle;
               gestureRef.current.startZoom = stateRef.current.zoom;
+              gestureRef.current.startRotation = stateRef.current.rotation;
               gestureRef.current.startOffset = {
                 ...stateRef.current.imageOffset,
               };
               return;
             }
 
+            // 处理缩放
             const scale = distance / gestureRef.current.startDistance;
             const newZoom = Math.max(
               MIN_CROP_ZOOM,
               Math.min(MAX_CROP_ZOOM, gestureRef.current.startZoom * scale),
             );
             onZoomChange(newZoom);
+
+            // 处理旋转
+            const angleDiff = angle - gestureRef.current.startAngle;
+            let newRotation =
+              (gestureRef.current.startRotation + angleDiff) % 360;
+            if (newRotation < 0) newRotation += 360;
+            onRotationChange(newRotation);
 
             const clamped = clampImageOffset(
               gestureRef.current.startOffset.x,
@@ -351,7 +404,13 @@ export const Cropper: React.FC<CropperProps> = ({
           gestureRef.current.isPinching = false;
         },
       }),
-    [clampImageOffset, onZoomChange, calculateCropRect, onCropChange],
+    [
+      clampImageOffset,
+      onZoomChange,
+      onRotationChange,
+      calculateCropRect,
+      onCropChange,
+    ],
   );
 
   // 角落拖动手势（仅自由比例模式）
@@ -386,26 +445,27 @@ export const Cropper: React.FC<CropperProps> = ({
             case 'tl':
               newW = startSize.width - dx;
               newH = startSize.height - dy;
-              offsetDx = dx / 2;
-              offsetDy = dy / 2;
+              // 关键修复：位移补偿必须是 -dx/2 和 -dy/2 才能抵消居中缩放
+              offsetDx = -dx / 2;
+              offsetDy = -dy / 2;
               break;
             case 'tr':
               newW = startSize.width + dx;
               newH = startSize.height - dy;
-              offsetDx = dx / 2;
-              offsetDy = dy / 2;
+              offsetDx = -dx / 2;
+              offsetDy = -dy / 2;
               break;
             case 'bl':
               newW = startSize.width - dx;
               newH = startSize.height + dy;
-              offsetDx = dx / 2;
-              offsetDy = dy / 2;
+              offsetDx = -dx / 2;
+              offsetDy = -dy / 2;
               break;
             case 'br':
               newW = startSize.width + dx;
               newH = startSize.height + dy;
-              offsetDx = dx / 2;
-              offsetDy = dy / 2;
+              offsetDx = -dx / 2;
+              offsetDy = -dy / 2;
               break;
           }
 

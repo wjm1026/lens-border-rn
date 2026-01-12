@@ -97,8 +97,10 @@ export default function EditorScreen({
           {activeTab === 'crop' ? (
             <Cropper
               imageUri={imageUri}
+              initialCropRect={cropControls.cropRect}
               onCropChange={cropControls.setCropRect}
               rotation={cropControls.cropRotation}
+              onRotationChange={cropControls.setCropRotation}
               zoom={cropControls.cropZoom}
               onZoomChange={cropControls.setCropZoom}
               flip={cropControls.cropFlip}
