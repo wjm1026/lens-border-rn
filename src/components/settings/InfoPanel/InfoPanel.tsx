@@ -14,9 +14,9 @@ import {colors} from '../../../theme';
 import {Slider, SegmentedControl, ColorPicker} from '../../ui';
 import CameraSelector from '../../CameraSelector';
 import InfoLineStyleCard from './InfoLineStyleCard';
-import type {FrameSettings, LineStyle} from '../../../types';
+import type {FrameSettings, LineStyle, ParsedExifData} from '../../../types';
 import type {CameraPreset} from '../../../data/cameraPresets';
-import {normalizeCameraModel} from '../../../utils/exifUtils';
+import {buildExifParams, normalizeCameraModel} from '../../../utils/exifUtils';
 
 interface InfoPanelProps {
   settings: FrameSettings;
@@ -26,7 +26,7 @@ interface InfoPanelProps {
   ) => void;
   patchSettings: (patch: Partial<FrameSettings>) => void;
   onReset: () => void;
-  exifCamera?: string;
+  initialExif?: ParsedExifData;
 }
 
 export default function InfoPanel({
@@ -34,7 +34,7 @@ export default function InfoPanel({
   updateSettings,
   patchSettings,
   onReset,
-  exifCamera,
+  initialExif,
 }: InfoPanelProps) {
   const updateCustomExif = useCallback(
     (key: keyof FrameSettings['customExif'], value: string) => {
@@ -65,19 +65,26 @@ export default function InfoPanel({
         return;
       }
 
+      // 恢复到原始 EXIF 数据
       patchSettings({
         selectedCameraPresetId: null,
         customExif: {
           ...settings.customExif,
-          model: undefined,
-          lens: undefined,
+          model: initialExif?.Model,
+          lens: initialExif?.LensModel,
+          params: buildExifParams(initialExif),
+          date: initialExif?.DateTime,
         },
       });
     },
-    [patchSettings, settings.customExif],
+    [patchSettings, settings.customExif, initialExif],
   );
 
-  const cameraHint = exifCamera;
+  // 从 initialExif 生成相机显示名称
+  const exifCamera =
+    initialExif?.Make || initialExif?.Model
+      ? `${initialExif.Make || ''} ${initialExif.Model || ''}`.trim()
+      : undefined;
 
   return (
     <View style={styles.container}>
@@ -116,7 +123,7 @@ export default function InfoPanel({
         <CameraSelector
           onSelect={handleCameraSelect}
           selectedId={settings.selectedCameraPresetId ?? null}
-          currentExifCamera={cameraHint}
+          currentExifCamera={exifCamera}
         />
         <Text style={styles.helperText}>预设可快速更换品牌和镜头</Text>
       </View>
@@ -157,15 +164,12 @@ export default function InfoPanel({
           <InfoLineStyleCard
             title="第一行: 相机型号"
             fontId={settings.line1Style.fontId}
-            onFontIdChange={fontId =>
-              updateLineStyle('line1Style', {fontId})
-            }
+            onFontIdChange={fontId => updateLineStyle('line1Style', {fontId})}
             fontSize={settings.line1Style.fontSize}
             onFontSizeChange={val =>
               updateLineStyle('line1Style', {fontSize: val})
             }
-            maxFontSize={48}
-          >
+            maxFontSize={48}>
             <Slider
               label="字重"
               value={settings.line1Style.fontWeight}
@@ -190,15 +194,12 @@ export default function InfoPanel({
           <InfoLineStyleCard
             title="第二行: 拍摄参数"
             fontId={settings.line2Style.fontId}
-            onFontIdChange={fontId =>
-              updateLineStyle('line2Style', {fontId})
-            }
+            onFontIdChange={fontId => updateLineStyle('line2Style', {fontId})}
             fontSize={settings.line2Style.fontSize}
             onFontSizeChange={val =>
               updateLineStyle('line2Style', {fontSize: val})
             }
-            maxFontSize={36}
-          >
+            maxFontSize={36}>
             <Slider
               label="不透明度"
               value={Math.round(settings.line2Style.opacity * 100)}

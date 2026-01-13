@@ -7,7 +7,11 @@ import {
 } from 'react-native';
 
 import type {FrameSettings, CropFlip, CropRect} from '../../types';
-import {DEFAULT_CROP_RECT, PREVIEW_EXIF_PADDING, PREVIEW_INFO_BASE_BOTTOM} from '../../config';
+import {
+  DEFAULT_CROP_RECT,
+  PREVIEW_EXIF_PADDING,
+  PREVIEW_INFO_BASE_BOTTOM,
+} from '../../config';
 import {SharedPreview} from './SharedPreview';
 
 interface ImagePreviewProps {
@@ -17,6 +21,10 @@ interface ImagePreviewProps {
   framePadding: number;
   captureRef: React.RefObject<View>; // 用于导出的 View ref
   onInfoOffsetChange: (offset: {x: number; y: number}) => void;
+  onCustomExifChange?: (
+    key: keyof FrameSettings['customExif'],
+    value: string,
+  ) => void;
   cropRect?: CropRect;
   cropRotation?: number;
   cropFlip?: CropFlip;
@@ -29,6 +37,7 @@ export default function ImagePreview({
   framePadding,
   captureRef,
   onInfoOffsetChange,
+  onCustomExifChange,
   cropRect = DEFAULT_CROP_RECT,
   cropRotation = 0,
   cropFlip = {horizontal: false, vertical: false},
@@ -87,6 +96,7 @@ export default function ImagePreview({
           cropRotation={cropRotation}
           cropFlip={cropFlip}
           onInfoOffsetChange={onInfoOffsetChange}
+          onCustomExifChange={onCustomExifChange}
           exifPadding={PREVIEW_EXIF_PADDING}
           infoBaseBottom={PREVIEW_INFO_BASE_BOTTOM}
         />

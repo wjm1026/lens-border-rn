@@ -1,0 +1,1 @@
+export const CAMERA_SELECTOR_MENU_MAX_HEIGHT = 360;

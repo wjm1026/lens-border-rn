@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback} from 'react';
 import {StatusBar, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -11,6 +11,7 @@ import {
 } from '../../components';
 import {colors} from '../../theme';
 import {useCropControls} from '../../hooks/useCropControls';
+import {useEditorPanelState} from '../../hooks/useEditorPanelState';
 import {useExportSettings} from '../../hooks/useExportSettings';
 import {useImageAspectRatio} from '../../hooks/useImageAspectRatio';
 import {useExportWorkflow} from '../../hooks/useExportWorkflow';
@@ -19,7 +20,7 @@ import {useInitialFrameSettings} from '../../hooks/useInitialFrameSettings';
 import {usePreviewAspectRatio} from '../../hooks/usePreviewAspectRatio';
 import EditorSettingsPanel from './EditorSettingsPanel';
 import {styles} from './styles';
-import type {ParsedExifData, TabId} from '../../types';
+import type {ParsedExifData} from '../../types';
 
 interface EditorScreenProps {
   imageUri: string;
@@ -32,8 +33,8 @@ export default function EditorScreen({
   initialExif,
   onReset,
 }: EditorScreenProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('layout');
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const {activeTab, isPanelOpen, handleTabChange, closePanel} =
+    useEditorPanelState();
 
   const initialSettings = useInitialFrameSettings(initialExif);
 
@@ -66,17 +67,12 @@ export default function EditorScreen({
     layoutAspectRatio: settings.aspectRatio,
   });
 
-  const handleTabChange = useCallback(
-    (nextTab: TabId) => {
-      setIsPanelOpen(prevOpen => (activeTab === nextTab ? !prevOpen : true));
-      setActiveTab(nextTab);
+  const handleCustomExifChange = useCallback(
+    (key: keyof typeof settings.customExif, value: string) => {
+      updateSettings('customExif', {...settings.customExif, [key]: value});
     },
-    [activeTab],
+    [settings.customExif, updateSettings],
   );
-
-  const handleClosePanel = useCallback(() => {
-    setIsPanelOpen(false);
-  }, []);
 
   return (
     <View style={styles.container}>
@@ -105,6 +101,7 @@ export default function EditorScreen({
               framePadding={framePadding}
               captureRef={previewCaptureRef}
               onInfoOffsetChange={updateInfoOffset}
+              onCustomExifChange={handleCustomExifChange}
               cropRect={cropControls.cropRect}
               cropRotation={cropControls.cropRotation}
               cropFlip={cropControls.cropFlip}
@@ -115,7 +112,7 @@ export default function EditorScreen({
         <EditorSettingsPanel
           activeTab={activeTab}
           isOpen={isPanelOpen}
-          onClose={handleClosePanel}
+          onClose={closePanel}
           settings={settings}
           updateSettings={updateSettings}
           patchSettings={patchSettings}
@@ -123,6 +120,7 @@ export default function EditorScreen({
           onResetInfo={resetInfoSettings}
           onSave={requestExport}
           isSaving={isProcessing}
+          initialExif={initialExif}
         />
       </SafeAreaView>
 

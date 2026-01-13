@@ -10,7 +10,12 @@ import {
   InfoPanel,
   LayoutPanel,
 } from '../../components';
-import type {CropControls, FrameSettings, TabId} from '../../types';
+import type {
+  CropControls,
+  FrameSettings,
+  ParsedExifData,
+  TabId,
+} from '../../types';
 
 interface EditorSettingsPanelProps {
   activeTab: TabId;
@@ -26,7 +31,67 @@ interface EditorSettingsPanelProps {
   onResetInfo: () => void;
   onSave: () => void;
   isSaving: boolean;
+  initialExif?: ParsedExifData;
 }
+
+type PanelRenderProps = Pick<
+  EditorSettingsPanelProps,
+  | 'settings'
+  | 'updateSettings'
+  | 'patchSettings'
+  | 'cropControls'
+  | 'onResetInfo'
+  | 'onSave'
+  | 'isSaving'
+  | 'initialExif'
+>;
+
+const PANEL_RENDERERS: Record<
+  TabId,
+  (props: PanelRenderProps) => React.ReactNode
+> = {
+  layout: ({settings, updateSettings}) => (
+    <LayoutPanel settings={settings} updateSettings={updateSettings} />
+  ),
+  crop: ({cropControls}) => (
+    <CropPanel
+      aspectId={cropControls.cropAspect}
+      onAspectChange={cropControls.setCropAspect}
+      rotation={cropControls.cropRotation}
+      onRotationChange={cropControls.setCropRotation}
+      onRotateStep={cropControls.handleRotateStep}
+      flip={cropControls.cropFlip}
+      onFlipChange={cropControls.setCropFlip}
+    />
+  ),
+  border: ({settings, updateSettings}) => (
+    <BorderPanel settings={settings} updateSettings={updateSettings} />
+  ),
+  bg: ({settings, updateSettings, patchSettings}) => (
+    <BackgroundPanel
+      settings={settings}
+      updateSettings={updateSettings}
+      patchSettings={patchSettings}
+    />
+  ),
+  info: ({settings, updateSettings, patchSettings, onResetInfo, initialExif}) => (
+    <InfoPanel
+      settings={settings}
+      updateSettings={updateSettings}
+      patchSettings={patchSettings}
+      onReset={onResetInfo}
+      initialExif={initialExif}
+    />
+  ),
+  export: ({settings, updateSettings, onSave, isSaving}) => (
+    <ExportPanel
+      settings={settings}
+      updateSettings={updateSettings}
+      onSave={onSave}
+      isSaving={isSaving}
+    />
+  ),
+};
 
 export default function EditorSettingsPanel({
   activeTab,
@@ -39,68 +104,18 @@ export default function EditorSettingsPanel({
   onResetInfo,
   onSave,
   isSaving,
+  initialExif,
 }: EditorSettingsPanelProps) {
-  let panelContent: React.ReactNode = null;
-  switch (activeTab) {
-    case 'layout':
-      panelContent = (
-        <LayoutPanel settings={settings} updateSettings={updateSettings} />
-      );
-      break;
-    case 'crop':
-      panelContent = (
-        <CropPanel
-          aspectId={cropControls.cropAspect}
-          onAspectChange={cropControls.setCropAspect}
-          rotation={cropControls.cropRotation}
-          onRotationChange={cropControls.setCropRotation}
-          onRotateStep={cropControls.handleRotateStep}
-          flip={cropControls.cropFlip}
-          onFlipChange={cropControls.setCropFlip}
-        />
-      );
-      break;
-    case 'border':
-      panelContent = (
-        <BorderPanel settings={settings} updateSettings={updateSettings} />
-      );
-      break;
-    case 'bg':
-      panelContent = (
-        <BackgroundPanel
-          settings={settings}
-          updateSettings={updateSettings}
-          patchSettings={patchSettings}
-        />
-      );
-      break;
-    case 'info':
-      panelContent = (
-        <InfoPanel
-          settings={settings}
-          updateSettings={updateSettings}
-          patchSettings={patchSettings}
-          onReset={onResetInfo}
-        />
-      );
-      break;
-    case 'export':
-      panelContent = (
-        <ExportPanel
-          settings={settings}
-          updateSettings={updateSettings}
-          onSave={onSave}
-          isSaving={isSaving}
-        />
-      );
-      break;
-    default:
-      panelContent = null;
-  }
-
-  if (!panelContent) {
-    return null;
-  }
+  const panelContent = PANEL_RENDERERS[activeTab]({
+    settings,
+    updateSettings,
+    patchSettings,
+    cropControls,
+    onResetInfo,
+    onSave,
+    isSaving,
+    initialExif,
+  });
 
   return (
     <>

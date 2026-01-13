@@ -1,5 +1,5 @@
-import React, {useMemo} from 'react';
-import {Image, StyleSheet, View} from 'react-native';
+import React, {useMemo, useState} from 'react';
+import {Image, LayoutChangeEvent, StyleSheet, View} from 'react-native';
 import Svg, {Defs, LinearGradient, Rect, Stop} from 'react-native-svg';
 
 import type {FrameSettings} from '../../types';
@@ -17,6 +17,13 @@ export default function BackgroundLayer({
   settings,
   imageUri,
 }: BackgroundLayerProps) {
+  const [size, setSize] = useState({width: 0, height: 0});
+
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const {width, height} = event.nativeEvent.layout;
+    setSize({width, height});
+  };
+
   const gradientPoints = useMemo(
     () => getGradientPoints(settings.gradientAngle),
     [settings.gradientAngle],
@@ -36,18 +43,19 @@ export default function BackgroundLayer({
   }, [settings.backgroundBrightness]);
 
   return (
-    <View style={styles.container} pointerEvents="none">
+    <View style={styles.container} pointerEvents="none" onLayout={handleLayout}>
       {settings.backgroundType === 'color' && (
         <View
-          style={[
-            styles.fill,
-            {backgroundColor: settings.backgroundColor},
-          ]}
+          style={[styles.fill, {backgroundColor: settings.backgroundColor}]}
         />
       )}
 
-      {settings.backgroundType === 'gradient' && (
-        <Svg style={styles.fill} width="100%" height="100%">
+      {settings.backgroundType === 'gradient' && size.width > 0 && (
+        <Svg
+          style={styles.fill}
+          width={size.width}
+          height={size.height}
+          viewBox={`0 0 ${size.width} ${size.height}`}>
           <Defs>
             <LinearGradient
               id="bgGradient"
@@ -62,8 +70,8 @@ export default function BackgroundLayer({
           <Rect
             x="0"
             y="0"
-            width="100%"
-            height="100%"
+            width={size.width}
+            height={size.height}
             fill="url(#bgGradient)"
           />
         </Svg>

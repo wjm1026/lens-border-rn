@@ -12,6 +12,9 @@ import {Slider, SegmentedControl, ColorPicker} from '../../ui';
 import type {FrameSettings} from '../../../types';
 import {getGradientPoints} from '../../../utils/gradient';
 
+const SWATCH_SIZE = 28;
+const GRADIENT_SWATCH = 32;
+
 interface BackgroundPanelProps {
   settings: FrameSettings;
   updateSettings: <K extends keyof FrameSettings>(
@@ -191,7 +194,10 @@ export default function BackgroundPanel({
                   activeOpacity={0.7}
                   accessibilityRole="button"
                   accessibilityLabel={`预设渐变 ${index + 1}`}>
-                  <Svg width="100%" height="100%">
+                  <Svg
+                    width={GRADIENT_SWATCH}
+                    height={GRADIENT_SWATCH}
+                    viewBox={`0 0 ${GRADIENT_SWATCH} ${GRADIENT_SWATCH}`}>
                     <Defs>
                       <LinearGradient
                         id={`presetGrad-${index}`}
@@ -206,8 +212,8 @@ export default function BackgroundPanel({
                     <Rect
                       x="0"
                       y="0"
-                      width="100%"
-                      height="100%"
+                      width={GRADIENT_SWATCH}
+                      height={GRADIENT_SWATCH}
                       fill={`url(#presetGrad-${index})`}
                     />
                   </Svg>
@@ -249,9 +255,6 @@ export default function BackgroundPanel({
     </View>
   );
 }
-
-const SWATCH_SIZE = 28;
-const GRADIENT_SWATCH = 32;
 
 const styles = StyleSheet.create({
   container: {

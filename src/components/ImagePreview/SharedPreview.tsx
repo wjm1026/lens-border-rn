@@ -20,6 +20,10 @@ interface SharedPreviewProps {
   cropRotation?: number;
   cropFlip?: CropFlip;
   onInfoOffsetChange?: (offset: {x: number; y: number}) => void;
+  onCustomExifChange?: (
+    key: keyof FrameSettings['customExif'],
+    value: string,
+  ) => void;
   exifPadding?: number;
   infoBaseBottom?: number;
   onImageLoad?: () => void;
@@ -35,6 +39,7 @@ export const SharedPreview = React.memo(
     cropRotation = 0,
     cropFlip = {horizontal: false, vertical: false},
     onInfoOffsetChange,
+    onCustomExifChange,
     exifPadding = PREVIEW_EXIF_PADDING,
     infoBaseBottom = PREVIEW_INFO_BASE_BOTTOM,
     onImageLoad,
@@ -142,6 +147,7 @@ export const SharedPreview = React.memo(
           settings={settings}
           framePadding={framePadding}
           onOffsetChange={onInfoOffsetChange}
+          onCustomExifChange={onCustomExifChange}
           baseBottom={infoBaseBottom}
         />
       </View>

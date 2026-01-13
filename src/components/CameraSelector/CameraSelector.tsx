@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback} from 'react';
 import {
   Modal,
   Pressable,
@@ -11,16 +11,11 @@ import {
 } from 'react-native';
 import {Camera, ChevronDown, Search, Sparkles} from 'lucide-react-native';
 
+import {useCameraSelectorState} from '../../hooks/useCameraSelectorState';
 import {useMenuPosition} from '../../hooks/useMenuPosition';
+import {CAMERA_SELECTOR_MENU_MAX_HEIGHT} from '../../config';
 import {colors} from '../../theme';
-import {
-  CAMERA_BRANDS,
-  getCameraPresetById,
-  type CameraBrand,
-  type CameraPreset,
-} from '../../data/cameraPresets';
-
-const MENU_MAX_HEIGHT = 360;
+import {type CameraBrand, type CameraPreset} from '../../data/cameraPresets';
 
 interface CameraSelectorProps {
   onSelect: (preset: CameraPreset | null) => void;
@@ -33,34 +28,21 @@ export default function CameraSelector({
   selectedId,
   currentExifCamera,
 }: CameraSelectorProps) {
-  const [search, setSearch] = useState('');
-  const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
+  const {
+    search,
+    setSearch,
+    expandedBrand,
+    toggleBrand,
+    selectedPreset,
+    filteredBrands,
+    hasSearchQuery,
+    resetSearch,
+  } = useCameraSelectorState({selectedId});
   const {isOpen, menuPosition, openMenu, closeMenu, triggerRef} =
     useMenuPosition({
-      maxHeight: MENU_MAX_HEIGHT,
-      onClose: () => setSearch(''),
+      maxHeight: CAMERA_SELECTOR_MENU_MAX_HEIGHT,
+      onClose: resetSearch,
     });
-
-  const selectedPreset = useMemo(
-    () =>
-      selectedId ? getCameraPresetById(selectedId) ?? null : null,
-    [selectedId],
-  );
-
-  const filteredBrands = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) {
-      return CAMERA_BRANDS;
-    }
-    return CAMERA_BRANDS.map(brand => ({
-      ...brand,
-      models: brand.models.filter(model => {
-        const display = model.displayName.toLowerCase();
-        const raw = model.model.toLowerCase();
-        return display.includes(query) || raw.includes(query);
-      }),
-    })).filter(brand => brand.models.length > 0);
-  }, [search]);
 
   const handleSelect = useCallback(
     (preset: CameraPreset) => {
@@ -75,6 +57,7 @@ export default function CameraSelector({
     closeMenu();
   }, [closeMenu, onSelect]);
 
+  const isPresetSelected = Boolean(selectedPreset);
   const displayText =
     selectedPreset?.displayName || currentExifCamera || '选择相机型号';
 
@@ -86,19 +69,17 @@ export default function CameraSelector({
           onPress={openMenu}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel="选择相机型号"
-        >
+          accessibilityLabel="选择相机型号">
           <Camera size={16} color="rgba(255,255,255,0.6)" />
           <Text
             style={[
               styles.triggerText,
-              selectedPreset ? styles.triggerTextActive : null,
+              isPresetSelected ? styles.triggerTextActive : null,
             ]}
-            numberOfLines={1}
-          >
+            numberOfLines={1}>
             {displayText}
           </Text>
-          {selectedPreset && (
+          {isPresetSelected && (
             <View style={styles.presetBadge}>
               <Text style={styles.presetBadgeText}>预设</Text>
             </View>
@@ -115,8 +96,7 @@ export default function CameraSelector({
         visible={isOpen}
         transparent
         animationType="fade"
-        onRequestClose={closeMenu}
-      >
+        onRequestClose={closeMenu}>
         <Pressable style={styles.modalOverlay} onPress={closeMenu}>
           <Pressable
             style={[
@@ -128,8 +108,7 @@ export default function CameraSelector({
                 maxHeight: menuPosition.maxHeight,
               },
             ]}
-            onPress={e => e.stopPropagation()}
-          >
+            onPress={e => e.stopPropagation()}>
             <View style={styles.searchContainer}>
               <Search size={16} color="rgba(255,255,255,0.4)" />
               <TextInput
@@ -148,18 +127,16 @@ export default function CameraSelector({
               style={styles.menuScroll}
               contentContainerStyle={styles.menuContent}
               showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
+              keyboardShouldPersistTaps="handled">
               {currentExifCamera ? (
                 <View style={styles.exifSection}>
                   <TouchableOpacity
                     style={[
                       styles.exifButton,
-                      !selectedPreset && styles.exifButtonActive,
+                      !isPresetSelected && styles.exifButtonActive,
                     ]}
                     onPress={handleReset}
-                    activeOpacity={0.8}
-                  >
+                    activeOpacity={0.8}>
                     <Sparkles size={16} color={colors.accent} />
                     <View style={styles.exifTextBlock}>
                       <Text style={styles.exifTitle}>使用原始 EXIF</Text>
@@ -167,7 +144,7 @@ export default function CameraSelector({
                         {currentExifCamera}
                       </Text>
                     </View>
-                    {!selectedPreset && <View style={styles.exifDot} />}
+                    {!isPresetSelected && <View style={styles.exifDot} />}
                   </TouchableOpacity>
                 </View>
               ) : null}
@@ -176,10 +153,8 @@ export default function CameraSelector({
                 <BrandGroup
                   key={brand.id}
                   brand={brand}
-                  isExpanded={Boolean(search) || expandedBrand === brand.id}
-                  onToggle={() =>
-                    setExpandedBrand(prev => (prev === brand.id ? null : brand.id))
-                  }
+                  isExpanded={hasSearchQuery || expandedBrand === brand.id}
+                  onToggle={() => toggleBrand(brand.id)}
                   onSelect={handleSelect}
                   selectedId={selectedId}
                 />
@@ -220,8 +195,7 @@ function BrandGroup({
       <TouchableOpacity
         style={[styles.brandHeader, hasSelected && styles.brandHeaderActive]}
         onPress={onToggle}
-        activeOpacity={0.8}
-      >
+        activeOpacity={0.8}>
         <Text style={styles.brandName}>{brand.name}</Text>
         <Text style={styles.brandCount}>({brand.models.length})</Text>
         <View style={styles.flexSpacer} />
@@ -242,8 +216,7 @@ function BrandGroup({
                 key={model.id}
                 style={[styles.modelRow, isActive && styles.modelRowActive]}
                 onPress={() => onSelect(model)}
-                activeOpacity={0.8}
-              >
+                activeOpacity={0.8}>
                 <Text style={styles.modelText} numberOfLines={1}>
                   {model.displayName}
                 </Text>
@@ -410,7 +383,6 @@ const styles = StyleSheet.create({
   },
   modelsContainer: {
     backgroundColor: 'rgba(0,0,0,0.2)',
-    paddingVertical: 4,
   },
   modelRow: {
     flexDirection: 'row',
