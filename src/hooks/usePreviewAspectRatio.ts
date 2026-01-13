@@ -17,14 +17,13 @@ export const usePreviewAspectRatio = ({
 }: PreviewAspectParams) => {
   const effectiveImageAspectRatio = useMemo(() => {
     const safeImageRatio = imageAspectRatio > 0 ? imageAspectRatio : 1;
-    const isRotated = cropRotation % 180 !== 0;
-    const contentRatio = isRotated ? 1 / safeImageRatio : safeImageRatio;
+    // 不根据旋转角度自动调整宽高比，完全由用户控制
+    const contentRatio = safeImageRatio;
     const cropRatio = cropRect.height > 0 ? cropRect.width / cropRect.height : 1;
     return cropRatio * contentRatio;
   }, [
     cropRect.height,
     cropRect.width,
-    cropRotation,
     imageAspectRatio,
   ]);
 

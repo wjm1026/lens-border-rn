@@ -126,7 +126,7 @@ export default function Slider({
       <View style={styles.labelRow}>
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.valueText}>
-          {value}
+          {stepDecimals > 0 ? value.toFixed(stepDecimals) : Math.round(value)}
           {unit}
         </Text>
       </View>

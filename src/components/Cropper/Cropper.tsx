@@ -51,8 +51,8 @@ export const Cropper: React.FC<CropperProps> = ({
   // 图片偏移量（相对于中心点）
   const [imageOffset, setImageOffset] = useState({x: 0, y: 0});
 
-  // 自由比例模式下的裁切框尺寸
-  const [freeCropSize, setFreeCropSize] = useState<{
+  // 自定义裁切框尺寸（用于手动调整后的尺寸）
+  const [customCropSize, setCustomCropSize] = useState<{
     width: number;
     height: number;
   } | null>(null);
@@ -64,7 +64,7 @@ export const Cropper: React.FC<CropperProps> = ({
   useEffect(() => {
     let isActive = true;
     isInitializedRef.current = false;
-    setFreeCropSize(null);
+    setCustomCropSize(null);
     Image.getSize(
       imageUri,
       (width, height) => {
@@ -80,14 +80,9 @@ export const Cropper: React.FC<CropperProps> = ({
     };
   }, [imageUri]);
 
-  // 计算旋转后的视觉尺寸
-  const isRotated90or270 = rotation % 180 !== 0;
-  const visualImageW = isRotated90or270
-    ? imageNaturalSize.height
-    : imageNaturalSize.width;
-  const visualImageH = isRotated90or270
-    ? imageNaturalSize.width
-    : imageNaturalSize.height;
+  // 使用原始图片尺寸，不根据旋转角度自动交换宽高
+  const visualImageW = imageNaturalSize.width;
+  const visualImageH = imageNaturalSize.height;
 
   // 计算适应容器的基础尺寸
   const baseFitSize = useMemo(() => {
@@ -123,20 +118,47 @@ export const Cropper: React.FC<CropperProps> = ({
       return {width: 0, height: 0};
     }
 
-    // 自由比例模式且有自定义尺寸
-    if (aspectRatio === undefined && freeCropSize) {
-      return freeCropSize;
+    // 1. 如果有自定义尺寸，优先使用 (包括从固定切换到自由后的持久化尺寸)
+    if (customCropSize) {
+      if (aspectRatio === undefined) {
+        return customCropSize;
+      }
+      // 固定比例模式下，优先返回自定义尺寸（它已经被约束了）
+      return customCropSize;
     }
 
+    // 2. 自由比例模式 (aspectRatio === undefined)
     if (aspectRatio === undefined) {
-      // 自由比例默认全选
+      // 关键修复：消除切换闪烁
+      // 当从固定比例切换到自由模式时，customCropSize 更新是异步的（在 Effect 中）。
+      // 在这期间的一帧，如果直接返回全屏尺寸，会导致 Layuout 剧烈跳变（甚至产生翻转错觉）。
+      // 所以如果检测到“刚刚还是固定比例”（prevAspectRatioRef 有值），
+      // 我们就在这里临时计算并返回那个比例的尺寸，保持视觉稳定。
+      if (prevAspectRatioRef.current !== undefined) {
+        const prevRatio = prevAspectRatioRef.current;
+        const boxRatio = baseFitSize.width / baseFitSize.height;
+        if (prevRatio > boxRatio) {
+          return {
+            width: baseFitSize.width,
+            height: baseFitSize.width / prevRatio,
+          };
+        } else {
+          return {
+            width: baseFitSize.height * prevRatio,
+            height: baseFitSize.height,
+          };
+        }
+      }
+
+      // 如果真的是初始自由模式，或者没有之前的比例记录，则默认全选
       return {
         width: baseFitSize.width,
         height: baseFitSize.height,
       };
     }
 
-    // 固定比例
+    // 3. 固定比例模式 - 默认最大化适应
+    // (逻辑：只有在没有 customCropSize 时才会走到这里，通常是刚切换到一个新的固定比例)
     const boxRatio = baseFitSize.width / baseFitSize.height;
     if (aspectRatio > boxRatio) {
       return {
@@ -149,7 +171,7 @@ export const Cropper: React.FC<CropperProps> = ({
         height: baseFitSize.height,
       };
     }
-  }, [baseFitSize, aspectRatio, freeCropSize]);
+  }, [baseFitSize, aspectRatio, customCropSize]);
 
   // 图片显示尺寸（应用 zoom）
   const imageDisplaySize = useMemo(
@@ -216,34 +238,85 @@ export const Cropper: React.FC<CropperProps> = ({
 
   // 处理 aspectRatio 变化
   useEffect(() => {
-    if (aspectRatio !== prevAspectRatioRef.current && baseFitSize.width > 0) {
-      setImageOffset({x: 0, y: 0});
-      setFreeCropSize(null); // 重置自定义尺寸
+    // 只有当 aspectRatio 真正变化时才执行
+    if (aspectRatio === prevAspectRatioRef.current) {
+      return;
+    }
 
-      // 计算新的裁切框尺寸
-      let newCropSize;
+    if (baseFitSize.width > 0) {
+      // 移除强制重置，保留当前的 offset，但需要 clamp 确保不越界
+      // setImageOffset({x: 0, y: 0});
+
+      let targetSize;
       if (aspectRatio === undefined) {
-        newCropSize = baseFitSize;
+        // === 切换到自由模式 ===
+        if (customCropSize) {
+          targetSize = customCropSize;
+        } else if (prevAspectRatioRef.current !== undefined) {
+          // 之前的比例存在，计算出当时的尺寸作为自由模式的初始尺寸
+          const prevRatio = prevAspectRatioRef.current;
+          const boxRatio = baseFitSize.width / baseFitSize.height;
+          if (prevRatio > boxRatio) {
+            targetSize = {
+              width: baseFitSize.width,
+              height: baseFitSize.width / prevRatio,
+            };
+          } else {
+            targetSize = {
+              width: baseFitSize.height * prevRatio,
+              height: baseFitSize.height,
+            };
+          }
+          // 保存这个尺寸作为自定义尺寸
+          setCustomCropSize(targetSize);
+        } else {
+          // 默认全选
+          targetSize = baseFitSize;
+        }
       } else {
+        // === 切换到固定比例 ===
+        // 重置自定义尺寸，使用新的固定比例计算尺寸
+        setCustomCropSize(null);
+
         const boxRatio = baseFitSize.width / baseFitSize.height;
         if (aspectRatio > boxRatio) {
-          newCropSize = {
+          targetSize = {
             width: baseFitSize.width,
             height: baseFitSize.width / aspectRatio,
           };
         } else {
-          newCropSize = {
+          targetSize = {
             width: baseFitSize.height * aspectRatio,
             height: baseFitSize.height,
           };
         }
       }
 
-      const newCropRect = calculateCropRect({x: 0, y: 0}, zoom, newCropSize);
-      onCropChange(newCropRect);
+      if (targetSize) {
+        // 使用当前的 offset 进行 clamp，确保在新的裁切框尺寸下合法
+        const clampedOffset = clampImageOffset(
+          imageOffset.x,
+          imageOffset.y,
+          zoom,
+          targetSize,
+        );
+        setImageOffset(clampedOffset);
+
+        const newCropRect = calculateCropRect(clampedOffset, zoom, targetSize);
+        onCropChange(newCropRect);
+      }
     }
     prevAspectRatioRef.current = aspectRatio;
-  }, [aspectRatio, baseFitSize, calculateCropRect, onCropChange, zoom]);
+  }, [
+    aspectRatio,
+    baseFitSize,
+    calculateCropRect,
+    onCropChange,
+    zoom,
+    customCropSize,
+    clampImageOffset,
+    imageOffset,
+  ]);
 
   // 初始化
   useEffect(() => {
@@ -269,7 +342,7 @@ export const Cropper: React.FC<CropperProps> = ({
 
         // 如果是自由比例模式，还原框大小
         if (aspectRatio === undefined) {
-          setFreeCropSize({
+          setCustomCropSize({
             width: initialCropRect.width * imgW,
             height: initialCropRect.height * imgH,
           });
@@ -299,6 +372,11 @@ export const Cropper: React.FC<CropperProps> = ({
     startAngle: 0,
     isPinching: false,
     startCropSize: {width: 0, height: 0},
+    // 增量更新用的上一帧状态
+    lastDistance: 0,
+    lastAngle: 0,
+    lastCenterX: 0,
+    lastCenterY: 0,
   });
 
   const stateRef = useRef({zoom, rotation, imageOffset, cropBoxSize});
@@ -321,9 +399,17 @@ export const Cropper: React.FC<CropperProps> = ({
           if (touches.length === 2) {
             const dx = touches[0].pageX - touches[1].pageX;
             const dy = touches[0].pageY - touches[1].pageY;
-            gestureRef.current.startDistance = Math.sqrt(dx * dx + dy * dy);
-            gestureRef.current.startAngle =
-              Math.atan2(dy, dx) * (180 / Math.PI);
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            const centerX = (touches[0].pageX + touches[1].pageX) / 2;
+            const centerY = (touches[0].pageY + touches[1].pageY) / 2;
+
+            gestureRef.current.startDistance = distance;
+            gestureRef.current.startAngle = angle;
+            gestureRef.current.lastDistance = distance;
+            gestureRef.current.lastAngle = angle;
+            gestureRef.current.lastCenterX = centerX;
+            gestureRef.current.lastCenterY = centerY;
             gestureRef.current.isPinching = true;
           } else {
             gestureRef.current.isPinching = false;
@@ -340,8 +426,10 @@ export const Cropper: React.FC<CropperProps> = ({
             const dy = touches[0].pageY - touches[1].pageY;
             const distance = Math.sqrt(dx * dx + dy * dy);
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            const centerX = (touches[0].pageX + touches[1].pageX) / 2;
+            const centerY = (touches[0].pageY + touches[1].pageY) / 2;
 
-            // 如果是刚刚开始识别到双指，或者之前是单指模式，则初始化双指状态
+            // 如果是刚刚开始识别到双指，则初始化
             if (
               !gestureRef.current.isPinching ||
               gestureRef.current.startDistance === 0
@@ -354,27 +442,49 @@ export const Cropper: React.FC<CropperProps> = ({
               gestureRef.current.startOffset = {
                 ...stateRef.current.imageOffset,
               };
+              gestureRef.current.lastDistance = distance;
+              gestureRef.current.lastAngle = angle;
+              gestureRef.current.lastCenterX = centerX;
+              gestureRef.current.lastCenterY = centerY;
               return;
             }
 
-            // 处理缩放
-            const scale = distance / gestureRef.current.startDistance;
+            // 增量计算
+            const deltaScale = distance / gestureRef.current.lastDistance;
+            const deltaAngle = angle - gestureRef.current.lastAngle;
+            const deltaCenterX = centerX - gestureRef.current.lastCenterX;
+            const deltaCenterY = centerY - gestureRef.current.lastCenterY;
+
+            // 更新 last 状态
+            gestureRef.current.lastDistance = distance;
+            gestureRef.current.lastAngle = angle;
+            gestureRef.current.lastCenterX = centerX;
+            gestureRef.current.lastCenterY = centerY;
+
+            // 计算新的 zoom
+            const currentZoom = stateRef.current.zoom;
             const newZoom = Math.max(
               MIN_CROP_ZOOM,
-              Math.min(MAX_CROP_ZOOM, gestureRef.current.startZoom * scale),
+              Math.min(MAX_CROP_ZOOM, currentZoom * deltaScale),
             );
-            onZoomChange(newZoom);
 
-            // 处理旋转
-            const angleDiff = angle - gestureRef.current.startAngle;
-            let newRotation =
-              (gestureRef.current.startRotation + angleDiff) % 360;
+            // 计算新的旋转角度
+            const currentRotation = stateRef.current.rotation;
+            let newRotation = (currentRotation + deltaAngle) % 360;
             if (newRotation < 0) newRotation += 360;
-            onRotationChange(newRotation);
+
+            // 计算新的偏移（增量更新）
+            const currentOffset = stateRef.current.imageOffset;
+            // 偏移量随着双指中点移动
+            const newOffsetX = currentOffset.x + deltaCenterX;
+            const newOffsetY = currentOffset.y + deltaCenterY;
+
+            onZoomChange(newZoom);
+            onRotationChange(Math.round(newRotation));
 
             const clamped = clampImageOffset(
-              gestureRef.current.startOffset.x,
-              gestureRef.current.startOffset.y,
+              newOffsetX,
+              newOffsetY,
               newZoom,
               currentCropSize,
             );
@@ -413,23 +523,19 @@ export const Cropper: React.FC<CropperProps> = ({
     ],
   );
 
-  // 角落拖动手势（仅自由比例模式）
+  // 角落拖动手势
   const createCornerResponder = useCallback(
     (corner: 'tl' | 'tr' | 'bl' | 'br') => {
       return PanResponder.create({
-        onStartShouldSetPanResponder: () => aspectRatio === undefined,
-        onMoveShouldSetPanResponder: () => aspectRatio === undefined,
-        onStartShouldSetPanResponderCapture: () => aspectRatio === undefined,
-        onMoveShouldSetPanResponderCapture: () => aspectRatio === undefined,
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
         onPanResponderGrant: () => {
           gestureRef.current.startCropSize = {...stateRef.current.cropBoxSize};
           gestureRef.current.startOffset = {...stateRef.current.imageOffset};
         },
         onPanResponderMove: (_, gestureState) => {
-          if (aspectRatio !== undefined) {
-            return;
-          }
-
           const {dx, dy} = gestureState;
           const startSize = gestureRef.current.startCropSize;
           const imgW = baseFitSize.width * stateRef.current.zoom;
@@ -437,49 +543,105 @@ export const Cropper: React.FC<CropperProps> = ({
 
           let newW = startSize.width;
           let newH = startSize.height;
-          let offsetDx = 0;
-          let offsetDy = 0;
 
-          // 根据角落位置调整尺寸和偏移
-          switch (corner) {
-            case 'tl':
-              newW = startSize.width - dx;
-              newH = startSize.height - dy;
-              // 关键修复：位移补偿必须是 -dx/2 和 -dy/2 才能抵消居中缩放
-              offsetDx = -dx / 2;
-              offsetDy = -dy / 2;
-              break;
-            case 'tr':
-              newW = startSize.width + dx;
-              newH = startSize.height - dy;
-              offsetDx = -dx / 2;
-              offsetDy = -dy / 2;
-              break;
-            case 'bl':
-              newW = startSize.width - dx;
-              newH = startSize.height + dy;
-              offsetDx = -dx / 2;
-              offsetDy = -dy / 2;
-              break;
-            case 'br':
-              newW = startSize.width + dx;
-              newH = startSize.height + dy;
-              offsetDx = -dx / 2;
-              offsetDy = -dy / 2;
-              break;
+          // 基础变化量
+          let deltaW = 0;
+          let deltaH = 0;
+
+          // 根据角落确定变化方向符号 (Left/Top 移动增加尺寸意味着坐标减小，反之亦然)
+          // TL: dx<0 -> W++, dy<0 -> H++
+          // TR: dx>0 -> W++, dy<0 -> H++
+          // BL: dx<0 -> W++, dy>0 -> H++
+          // BR: dx>0 -> W++, dy>0 -> H++
+
+          const isLeft = corner === 'tl' || corner === 'bl';
+          const isTop = corner === 'tl' || corner === 'tr';
+
+          const signW = isLeft ? -1 : 1;
+          const signH = isTop ? -1 : 1;
+
+          deltaW = dx * signW;
+          deltaH = dy * signH;
+
+          if (aspectRatio !== undefined) {
+            // 固定比例模式：限制长宽比
+            // 策略：取变化较大的那个维度作为主导，或者取投影
+            // 简单策略：看那个维度的 '有效变化' 更大
+            // 这里我们采用 "以宽为主" 或 "以高为主" 的动态策略，
+            // 比较 abs(deltaW) 和 abs(deltaH * ratio)
+            if (Math.abs(deltaW) > Math.abs(deltaH * aspectRatio)) {
+              // 宽度变化更多，以宽度为准
+              newW = startSize.width + deltaW;
+              newH = newW / aspectRatio;
+            } else {
+              // 高度变化更多，以高度为准
+              newH = startSize.height + deltaH;
+              newW = newH * aspectRatio;
+            }
+          } else {
+            // 自由模式
+            newW = startSize.width + deltaW;
+            newH = startSize.height + deltaH;
           }
 
-          // 限制尺寸
-          newW = Math.max(MIN_CROP_SIZE, Math.min(newW, imgW));
-          newH = Math.max(MIN_CROP_SIZE, Math.min(newH, imgH));
+          // 限制尺寸 (Min / Max)
+          // 注意：固定比例下，如果 Clamp 了一个维度，必须重新计算另一个维度以保持比例
+          // 1. Min Size
+          if (newW < MIN_CROP_SIZE) {
+            newW = MIN_CROP_SIZE;
+            if (aspectRatio !== undefined) newH = newW / aspectRatio;
+          }
+          if (newH < MIN_CROP_SIZE) {
+            newH = MIN_CROP_SIZE;
+            if (aspectRatio !== undefined) newW = newH * aspectRatio;
+          }
 
-          setFreeCropSize({width: newW, height: newH});
+          // 2. Max Size (Image Bounds)
+          if (newW > imgW) {
+            newW = imgW;
+            if (aspectRatio !== undefined) newH = newW / aspectRatio;
+          }
+          if (newH > imgH) {
+            newH = imgH;
+            if (aspectRatio !== undefined) newW = newH * aspectRatio;
+          }
 
-          // 调整偏移以保持图片在裁切框内
+          // Double check fit (sometimes recalculating one dimension might break the other limit)
+          if (newW > imgW) {
+            newW = imgW;
+            if (aspectRatio !== undefined) newH = newW / aspectRatio;
+          }
+          if (newH > imgH) {
+            newH = imgH;
+            if (aspectRatio !== undefined) newW = newH * aspectRatio;
+          }
+
+          setCustomCropSize({width: newW, height: newH});
+
+          // 计算位移补偿，保持对角不动
+          const finalDW = newW - startSize.width;
+          const finalDH = newH - startSize.height;
+
+          // 根据角落应用补偿
+          // Logic:
+          // offsetDx moves the Image.
+          // TL moves Left (-dw/2). To anchor BR, Image must move Right (+dw/2).
+          // BUT `offsetDx` in code was `-dx/2`.
+          // If TL drags Left (-), `dx` is neg. `offsetDx` is pos. Image moves Right. Correct.
+          // Formula:
+          // isLeft (TL/BL): Offset = +dW / 2
+          // isRight (TR/BR): Offset = -dW / 2
+          // isTop (TL/TR): Offset = +dH / 2
+          // isBottom (BL/BR): Offset = -dH / 2
+
+          const offsetDx = (isLeft ? 1 : -1) * (finalDW / 2);
+          const offsetDy = (isTop ? 1 : -1) * (finalDH / 2);
+
           const newOffset = {
             x: gestureRef.current.startOffset.x + offsetDx,
             y: gestureRef.current.startOffset.y + offsetDy,
           };
+
           const clamped = clampImageOffset(
             newOffset.x,
             newOffset.y,
@@ -535,28 +697,11 @@ export const Cropper: React.FC<CropperProps> = ({
   const isFreeMode = aspectRatio === undefined;
 
   const imageStyle = useMemo(() => {
-    const width = isRotated90or270
-      ? imageDisplaySize.height
-      : imageDisplaySize.width;
-    const height = isRotated90or270
-      ? imageDisplaySize.width
-      : imageDisplaySize.height;
-    const leftOffset =
-      imageX +
-      (isRotated90or270
-        ? (imageDisplaySize.width - imageDisplaySize.height) / 2
-        : 0);
-    const topOffset =
-      imageY +
-      (isRotated90or270
-        ? (imageDisplaySize.height - imageDisplaySize.width) / 2
-        : 0);
-
     return {
-      width,
-      height,
-      left: leftOffset,
-      top: topOffset,
+      width: imageDisplaySize.width,
+      height: imageDisplaySize.height,
+      left: imageX,
+      top: imageY,
       transform: [
         {rotate: `${rotation}deg`},
         {scaleX: flip.horizontal ? -1 : 1},
@@ -570,7 +715,6 @@ export const Cropper: React.FC<CropperProps> = ({
     imageDisplaySize.width,
     imageX,
     imageY,
-    isRotated90or270,
     rotation,
   ]);
 
@@ -694,27 +838,23 @@ export const Cropper: React.FC<CropperProps> = ({
             />
           </View>
 
-          {/* 四角拖动手柄（仅自由比例模式） */}
-          {isFreeMode && (
-            <>
-              <View
-                style={[styles.handleContainer, handleStyles.tl]}
-                {...cornerResponders.tl.panHandlers}
-              />
-              <View
-                style={[styles.handleContainer, handleStyles.tr]}
-                {...cornerResponders.tr.panHandlers}
-              />
-              <View
-                style={[styles.handleContainer, handleStyles.bl]}
-                {...cornerResponders.bl.panHandlers}
-              />
-              <View
-                style={[styles.handleContainer, handleStyles.br]}
-                {...cornerResponders.br.panHandlers}
-              />
-            </>
-          )}
+          {/* 四角拖动手柄 (全模式支持) */}
+          <View
+            style={[styles.handleContainer, handleStyles.tl]}
+            {...cornerResponders.tl.panHandlers}
+          />
+          <View
+            style={[styles.handleContainer, handleStyles.tr]}
+            {...cornerResponders.tr.panHandlers}
+          />
+          <View
+            style={[styles.handleContainer, handleStyles.bl]}
+            {...cornerResponders.bl.panHandlers}
+          />
+          <View
+            style={[styles.handleContainer, handleStyles.br]}
+            {...cornerResponders.br.panHandlers}
+          />
         </>
       )}
     </View>

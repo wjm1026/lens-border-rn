@@ -1,7 +1,11 @@
 import React, {useMemo} from 'react';
 import {Image, StyleSheet, View} from 'react-native';
 
-import {DEFAULT_CROP_RECT, PREVIEW_EXIF_PADDING, PREVIEW_INFO_BASE_BOTTOM} from '../../config';
+import {
+  DEFAULT_CROP_RECT,
+  PREVIEW_EXIF_PADDING,
+  PREVIEW_INFO_BASE_BOTTOM,
+} from '../../config';
 import {colors} from '../../theme';
 import type {FrameSettings, CropRect} from '../../types';
 import {BackgroundLayer} from '../BackgroundLayer';
@@ -81,9 +85,9 @@ export const SharedPreview = React.memo(
     const visualW = viewportSize.width / cropRect.width;
     const visualH = viewportSize.height / cropRect.height;
 
-    const isRotated = cropRotation % 180 !== 0;
-    const imgStyleW = isRotated ? visualH : visualW;
-    const imgStyleH = isRotated ? visualW : visualH;
+    // 不自动交换宽高，完全由用户控制
+    const imgStyleW = visualW;
+    const imgStyleH = visualH;
 
     const cropFrameStyle = useMemo(
       () => ({
