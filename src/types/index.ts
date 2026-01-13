@@ -8,12 +8,18 @@ export interface LineStyle {
 
 export type AspectRatio = 'original' | 'square' | 'portrait' | 'landscape';
 export type CropAspectId = 'free' | '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
+export type TabId = 'layout' | 'crop' | 'border' | 'bg' | 'info' | 'export';
 
 export interface CropRect {
   x: number; // 0-1 (normalized)
   y: number; // 0-1
   width: number; // 0-1
   height: number; // 0-1
+}
+
+export interface CropFlip {
+  horizontal: boolean;
+  vertical: boolean;
 }
 
 export interface FrameSettings {
@@ -31,7 +37,6 @@ export interface FrameSettings {
 
   // 背景
   backgroundType: 'color' | 'gradient' | 'blur';
-  backgroundGradient: string;
   gradientStartColor: string;
   gradientEndColor: string;
   gradientAngle: number;
@@ -41,7 +46,6 @@ export interface FrameSettings {
   // 信息
   showExif: boolean;
   textColor: string;
-  fontFamily: string;
   infoPosition: 'bottom' | 'side' | 'overlay';
   infoLayout: 'classic' | 'centered';
   infoPadding: number;
@@ -64,6 +68,28 @@ export interface FrameSettings {
   exportFormat: 'png' | 'jpeg';
   exportQuality: number;
   exportScale: number; // 1-4x，导出分辨率倍数
+}
+
+export interface ExportSettings {
+  format: 'png' | 'jpg';
+  quality: number;
+  scale: number;
+}
+
+export interface CropControls {
+  cropAspect: CropAspectId;
+  cropZoom: number;
+  cropRotation: number;
+  cropFlip: CropFlip;
+  cropRect: CropRect;
+  cropAspectRatio?: number;
+  minZoom: number;
+  setCropAspect: (id: CropAspectId) => void;
+  setCropZoom: (value: number) => void;
+  setCropRotation: (value: number) => void;
+  setCropFlip: (value: CropFlip) => void;
+  setCropRect: (rect: CropRect) => void;
+  handleRotateStep: (delta: number) => void;
 }
 
 export interface ParsedExifData {

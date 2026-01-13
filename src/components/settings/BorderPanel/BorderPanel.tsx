@@ -1,20 +1,10 @@
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 
+import {BORDER_COLORS} from '../../../config';
 import {colors} from '../../../theme';
 import {Slider, ColorPicker} from '../../ui';
 import type {FrameSettings} from '../../../types';
-
-const BORDER_COLORS = [
-  '#FFFFFF',
-  '#000000',
-  '#F5F5F5',
-  '#D1D5DB',
-  '#9CA3AF',
-  '#4B5563',
-  '#FBBF24',
-  '#93C5FD',
-];
 
 interface BorderPanelProps {
   settings: FrameSettings;

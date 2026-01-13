@@ -2,46 +2,15 @@ import React, {useMemo} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import Svg, {Defs, LinearGradient, Rect, Stop} from 'react-native-svg';
 
+import {
+  BACKGROUND_COLORS,
+  BACKGROUND_TYPES,
+  PRESET_GRADIENTS,
+} from '../../../config';
 import {colors} from '../../../theme';
 import {Slider, SegmentedControl, ColorPicker} from '../../ui';
 import type {FrameSettings} from '../../../types';
 import {getGradientPoints} from '../../../utils/gradient';
-
-const BACKGROUND_TYPES = [
-  {id: 'color' as const, label: '纯色'},
-  {id: 'gradient' as const, label: '渐变'},
-  {id: 'blur' as const, label: '模糊'},
-];
-
-const BACKGROUND_COLORS = [
-  '#FFFFFF',
-  '#F5F5F5',
-  '#E5E7EB',
-  '#CBD5E1',
-  '#9CA3AF',
-  '#6B7280',
-  '#111827',
-  '#000000',
-  '#FBBF24',
-  '#F472B6',
-  '#60A5FA',
-  '#34D399',
-];
-
-const PRESET_GRADIENTS = [
-  {start: '#4facfe', end: '#00f2fe'},
-  {start: '#a18cd1', end: '#fbc2eb'},
-  {start: '#ff9a9e', end: '#fecfef'},
-  {start: '#fbc2eb', end: '#a6c1ee'},
-  {start: '#667eea', end: '#764ba2'},
-  {start: '#f093fb', end: '#f5576c'},
-  {start: '#4facfe', end: '#84fab0'},
-  {start: '#fa709a', end: '#fee140'},
-  {start: '#30cfd0', end: '#330867'},
-  {start: '#f8b500', end: '#ff6b6b'},
-  {start: '#000000', end: '#434343'},
-  {start: '#ece9e6', end: '#ffffff'},
-];
 
 interface BackgroundPanelProps {
   settings: FrameSettings;
@@ -49,11 +18,13 @@ interface BackgroundPanelProps {
     key: K,
     value: FrameSettings[K],
   ) => void;
+  patchSettings: (patch: Partial<FrameSettings>) => void;
 }
 
 export default function BackgroundPanel({
   settings,
   updateSettings,
+  patchSettings,
 }: BackgroundPanelProps) {
   const normalizedBackground = settings.backgroundColor.toLowerCase();
   const normalizedStart = settings.gradientStartColor.toLowerCase();
@@ -64,12 +35,10 @@ export default function BackgroundPanel({
   );
 
   const updateGradient = (nextStart: string, nextEnd: string) => {
-    updateSettings('gradientStartColor', nextStart);
-    updateSettings('gradientEndColor', nextEnd);
-    updateSettings(
-      'backgroundGradient',
-      `${settings.gradientAngle}deg, ${nextStart} 0%, ${nextEnd} 100%`,
-    );
+    patchSettings({
+      gradientStartColor: nextStart,
+      gradientEndColor: nextEnd,
+    });
   };
 
   return (
@@ -159,10 +128,6 @@ export default function BackgroundPanel({
             step={1}
             onChange={val => {
               updateSettings('gradientAngle', val);
-              updateSettings(
-                'backgroundGradient',
-                `${val}deg, ${settings.gradientStartColor} 0%, ${settings.gradientEndColor} 100%`,
-              );
             }}
             unit="°"
           />

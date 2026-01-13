@@ -6,7 +6,7 @@ import {
   View,
 } from 'react-native';
 
-import type {FrameSettings, CropRect} from '../../types';
+import type {FrameSettings, CropFlip, CropRect} from '../../types';
 import {DEFAULT_CROP_RECT, PREVIEW_EXIF_PADDING, PREVIEW_INFO_BASE_BOTTOM} from '../../config';
 import {SharedPreview} from './SharedPreview';
 
@@ -19,7 +19,7 @@ interface ImagePreviewProps {
   onInfoOffsetChange: (offset: {x: number; y: number}) => void;
   cropRect?: CropRect;
   cropRotation?: number;
-  cropFlip?: {horizontal: boolean; vertical: boolean};
+  cropFlip?: CropFlip;
 }
 
 export default function ImagePreview({

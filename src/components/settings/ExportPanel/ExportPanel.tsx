@@ -1,30 +1,11 @@
-/*
- * @Author: wjm 791215714@qq.com
- * @Date: 2026-01-11 22:33:08
- * @LastEditors: wjm 791215714@qq.com
- * @LastEditTime: 2026-01-12 04:49:18
- * @FilePath: /code/lens-border-rn/src/components/settings/ExportPanel/ExportPanel.tsx
- * @Description: 导出设置面板 - 支持高分辨率无损导出
- */
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 
+import {EXPORT_FORMAT_OPTIONS, EXPORT_SCALE_OPTIONS} from '../../../config';
 import {colors} from '../../../theme';
 import {Slider} from '../../ui/Slider';
 import {SegmentedControl} from '../../ui/SegmentedControl';
 import type {FrameSettings} from '../../../types';
-
-const EXPORT_FORMAT_OPTIONS = [
-  {id: 'png' as const, label: 'PNG'},
-  {id: 'jpeg' as const, label: 'JPEG'},
-];
-
-const EXPORT_SCALE_OPTIONS = [
-  {id: 1, label: '1x'},
-  {id: 2, label: '2x'},
-  {id: 3, label: '3x'},
-  {id: 4, label: '4x'},
-];
 
 interface ExportPanelProps {
   settings: FrameSettings;

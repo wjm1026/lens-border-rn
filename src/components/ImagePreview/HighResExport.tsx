@@ -2,7 +2,7 @@ import React, {useMemo} from 'react';
 import {Dimensions, PixelRatio, StyleSheet, View} from 'react-native';
 
 import {HIGH_RES_MAX_DIMENSION, PREVIEW_EXIF_PADDING, PREVIEW_INFO_BASE_BOTTOM} from '../../config';
-import type {FrameSettings, CropRect} from '../../types';
+import type {CropFlip, CropRect, FrameSettings} from '../../types';
 import {useScaledSettings} from '../../hooks/useScaledSettings';
 import {SharedPreview} from './SharedPreview';
 
@@ -13,7 +13,7 @@ interface HighResExportProps {
   previewAspectRatio: number;
   cropRect?: CropRect;
   cropRotation?: number;
-  cropFlip?: {horizontal: boolean; vertical: boolean};
+  cropFlip?: CropFlip;
   captureRef: React.RefObject<View>;
   onReady?: () => void;
 }
@@ -114,8 +114,6 @@ export const HighResExport = React.memo(
             cropRect={cropRect}
             cropRotation={cropRotation}
             cropFlip={cropFlip}
-            // 导出时不处理 info 交互
-            onInfoOffsetChange={undefined}
             exifPadding={extraExifPadding}
             infoBaseBottom={baseBottom}
             onImageLoad={handleImageLoad} // 2. 监听内部图片加载

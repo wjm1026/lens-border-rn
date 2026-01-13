@@ -1,6 +1,5 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useMemo} from 'react';
 import {
-  Dimensions,
   Modal,
   Pressable,
   ScrollView,
@@ -11,67 +10,27 @@ import {
 } from 'react-native';
 import {ChevronDown} from 'lucide-react-native';
 
+import {useMenuPosition} from '../../../hooks/useMenuPosition';
 import {colors} from '../../../theme';
 import {FONT_OPTIONS} from '../../../config';
 
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 const MENU_MAX_HEIGHT = 260;
-const MENU_PADDING = 12;
 
 interface FontPickerProps {
   value: string;
   onChange: (id: string) => void;
 }
 
-interface MenuPosition {
-  top: number;
-  left: number;
-  width: number;
-  maxHeight: number;
-}
-
 export default function FontPicker({value, onChange}: FontPickerProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState<MenuPosition>({
-    top: 0,
-    left: 0,
-    width: 0,
-    maxHeight: MENU_MAX_HEIGHT,
-  });
-  const buttonRef = useRef<View>(null);
+  const {isOpen, menuPosition, openMenu, closeMenu, triggerRef} =
+    useMenuPosition({
+      maxHeight: MENU_MAX_HEIGHT,
+    });
 
   const selectedOption = useMemo(
     () => FONT_OPTIONS.find(option => option.id === value) || FONT_OPTIONS[0],
     [value],
   );
-
-  const openMenu = useCallback(() => {
-    buttonRef.current?.measureInWindow((x, y, width, height) => {
-      const maxHeight = Math.min(MENU_MAX_HEIGHT, SCREEN_HEIGHT - MENU_PADDING * 2);
-      let left = Math.max(MENU_PADDING, Math.min(x, SCREEN_WIDTH - width - MENU_PADDING));
-      let top = y + height + 8;
-
-      const spaceBelow = SCREEN_HEIGHT - (y + height);
-      const spaceAbove = y;
-
-      if (spaceBelow < maxHeight + 16 && spaceAbove >= maxHeight + 16) {
-        top = y - maxHeight - 8;
-      } else if (spaceBelow < maxHeight + 16 && spaceAbove < maxHeight + 16) {
-        top = Math.max(MENU_PADDING, SCREEN_HEIGHT - maxHeight - MENU_PADDING);
-      }
-
-      if (left + width > SCREEN_WIDTH - MENU_PADDING) {
-        left = SCREEN_WIDTH - width - MENU_PADDING;
-      }
-
-      setMenuPosition({top, left, width, maxHeight});
-      setIsOpen(true);
-    });
-  }, []);
-
-  const closeMenu = useCallback(() => {
-    setIsOpen(false);
-  }, []);
 
   const handleSelect = useCallback(
     (id: string) => {
@@ -83,7 +42,7 @@ export default function FontPicker({value, onChange}: FontPickerProps) {
 
   return (
     <View>
-      <View ref={buttonRef} collapsable={false}>
+      <View ref={triggerRef} collapsable={false}>
         <TouchableOpacity
           style={styles.triggerButton}
           onPress={openMenu}

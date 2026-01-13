@@ -11,19 +11,10 @@ import {colors} from '../../../theme';
 import {Slider} from '../../ui/Slider';
 import {
   SegmentedControl,
-  type SegmentedOption,
 } from '../../ui/SegmentedControl';
+import {CROP_ASPECT_OPTIONS} from '../../../config';
 
-import type {CropAspectId} from '../../../types';
-
-const CROP_ASPECT_OPTIONS: SegmentedOption<CropAspectId>[] = [
-  {id: 'free', label: '自由'},
-  {id: '1:1', label: '1:1'},
-  {id: '4:3', label: '4:3'},
-  {id: '3:4', label: '3:4'},
-  {id: '16:9', label: '16:9'},
-  {id: '9:16', label: '9:16'},
-];
+import type {CropAspectId, CropFlip} from '../../../types';
 
 interface CropPanelProps {
   aspectId: CropAspectId;
@@ -31,8 +22,8 @@ interface CropPanelProps {
   rotation: number;
   onRotationChange: (value: number) => void;
   onRotateStep: (delta: number) => void;
-  flip: {horizontal: boolean; vertical: boolean};
-  onFlipChange: (value: {horizontal: boolean; vertical: boolean}) => void;
+  flip: CropFlip;
+  onFlipChange: (value: CropFlip) => void;
 }
 
 export default function CropPanel({

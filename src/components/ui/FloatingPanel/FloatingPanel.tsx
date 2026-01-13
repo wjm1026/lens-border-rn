@@ -1,11 +1,3 @@
-/*
- * @Author: wjm 791215714@qq.com
- * @Date: 2026-01-11 22:57:54
- * @LastEditors: wjm 791215714@qq.com
- * @LastEditTime: 2026-01-11 23:32:00
- * @FilePath: /code/lens-border-rn/src/components/ui/FloatingPanel/FloatingPanel.tsx
- * @Description: 带动画效果的浮动面板组件
- */
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Animated,

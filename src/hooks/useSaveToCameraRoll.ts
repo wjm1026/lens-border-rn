@@ -9,11 +9,7 @@ import {captureRef} from 'react-native-view-shot';
 import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import type {View} from 'react-native';
 
-export interface ExportSettings {
-  format: 'png' | 'jpg';
-  quality: number;
-  scale: number; // 1-4x 倍数
-}
+import type {ExportSettings} from '../types';
 
 const normalizeFileUri = (uri: string) =>
   uri.startsWith('file://') ? uri : `file://${uri}`;

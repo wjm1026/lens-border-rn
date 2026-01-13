@@ -15,6 +15,13 @@ export const useFrameSettings = (
     [],
   );
 
+  const patchSettings = useCallback((patch: Partial<FrameSettings>) => {
+    if (Object.keys(patch).length === 0) {
+      return;
+    }
+    setSettings(prev => ({...prev, ...patch}));
+  }, []);
+
   const updateInfoOffset = useCallback((nextOffset: FrameSettings['infoOffset']) => {
     setSettings(prev => ({...prev, infoOffset: nextOffset}));
   }, []);
@@ -35,5 +42,11 @@ export const useFrameSettings = (
     }));
   }, []);
 
-  return {settings, updateSettings, updateInfoOffset, resetInfoSettings};
+  return {
+    settings,
+    updateSettings,
+    patchSettings,
+    updateInfoOffset,
+    resetInfoSettings,
+  };
 };

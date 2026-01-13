@@ -1,6 +1,5 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {
-  Dimensions,
   Modal,
   Pressable,
   ScrollView,
@@ -12,17 +11,16 @@ import {
 } from 'react-native';
 import {Camera, ChevronDown, Search, Sparkles} from 'lucide-react-native';
 
+import {useMenuPosition} from '../../hooks/useMenuPosition';
 import {colors} from '../../theme';
 import {
   CAMERA_BRANDS,
-  getAllCameraPresets,
+  getCameraPresetById,
   type CameraBrand,
   type CameraPreset,
 } from '../../data/cameraPresets';
 
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 const MENU_MAX_HEIGHT = 360;
-const MENU_PADDING = 12;
 
 interface CameraSelectorProps {
   onSelect: (preset: CameraPreset | null) => void;
@@ -30,35 +28,22 @@ interface CameraSelectorProps {
   currentExifCamera?: string;
 }
 
-interface MenuPosition {
-  top: number;
-  left: number;
-  width: number;
-  maxHeight: number;
-}
-
 export default function CameraSelector({
   onSelect,
   selectedId,
   currentExifCamera,
 }: CameraSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = useState<MenuPosition>({
-    top: 0,
-    left: 0,
-    width: 0,
-    maxHeight: MENU_MAX_HEIGHT,
-  });
-
-  const buttonRef = useRef<View>(null);
+  const {isOpen, menuPosition, openMenu, closeMenu, triggerRef} =
+    useMenuPosition({
+      maxHeight: MENU_MAX_HEIGHT,
+      onClose: () => setSearch(''),
+    });
 
   const selectedPreset = useMemo(
     () =>
-      selectedId
-        ? getAllCameraPresets().find(preset => preset.id === selectedId)
-        : null,
+      selectedId ? getCameraPresetById(selectedId) ?? null : null,
     [selectedId],
   );
 
@@ -76,35 +61,6 @@ export default function CameraSelector({
       }),
     })).filter(brand => brand.models.length > 0);
   }, [search]);
-
-  const openMenu = useCallback(() => {
-    buttonRef.current?.measureInWindow((x, y, width, height) => {
-      const maxHeight = Math.min(MENU_MAX_HEIGHT, SCREEN_HEIGHT - MENU_PADDING * 2);
-      let left = Math.max(MENU_PADDING, Math.min(x, SCREEN_WIDTH - width - MENU_PADDING));
-      let top = y + height + 8;
-
-      const spaceBelow = SCREEN_HEIGHT - (y + height);
-      const spaceAbove = y;
-
-      if (spaceBelow < maxHeight + 16 && spaceAbove >= maxHeight + 16) {
-        top = y - maxHeight - 8;
-      } else if (spaceBelow < maxHeight + 16 && spaceAbove < maxHeight + 16) {
-        top = Math.max(MENU_PADDING, SCREEN_HEIGHT - maxHeight - MENU_PADDING);
-      }
-
-      if (left + width > SCREEN_WIDTH - MENU_PADDING) {
-        left = SCREEN_WIDTH - width - MENU_PADDING;
-      }
-
-      setMenuPosition({top, left, width, maxHeight});
-      setIsOpen(true);
-    });
-  }, []);
-
-  const closeMenu = useCallback(() => {
-    setIsOpen(false);
-    setSearch('');
-  }, []);
 
   const handleSelect = useCallback(
     (preset: CameraPreset) => {
@@ -124,7 +80,7 @@ export default function CameraSelector({
 
   return (
     <View>
-      <View ref={buttonRef} collapsable={false}>
+      <View ref={triggerRef} collapsable={false}>
         <TouchableOpacity
           style={[styles.triggerButton, isOpen && styles.triggerButtonActive]}
           onPress={openMenu}

@@ -1,18 +1,17 @@
-/*
- * @Author: wjm 791215714@qq.com
- * @Date: 2026-01-12 01:25:00
- * @Description: 裁切组件 - 支持双指缩放、拖动图片、拖动角落调整裁切框
- */
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Image, PanResponder, StyleSheet, View} from 'react-native';
 
 import {
+  CROP_CORNER_LENGTH,
+  CROP_CORNER_THICKNESS,
+  CROP_EDGE_PADDING,
+  CROP_HANDLE_SIZE,
   DEFAULT_CROP_RECT,
   MAX_CROP_ZOOM,
   MIN_CROP_SIZE,
   MIN_CROP_ZOOM,
 } from '../../config';
-import type {CropRect} from '../../types';
+import type {CropFlip, CropRect} from '../../types';
 
 interface CropperProps {
   imageUri: string;
@@ -23,13 +22,8 @@ interface CropperProps {
   onRotationChange: (rotation: number) => void;
   zoom: number;
   onZoomChange: (zoom: number) => void;
-  flip: {horizontal: boolean; vertical: boolean};
+  flip: CropFlip;
 }
-
-const EDGE_PADDING = 20;
-const CORNER_LENGTH = 20;
-const CORNER_THICKNESS = 3;
-const HANDLE_SIZE = 44;
 
 export const Cropper: React.FC<CropperProps> = ({
   imageUri,
@@ -95,8 +89,8 @@ export const Cropper: React.FC<CropperProps> = ({
       return {width: 0, height: 0};
     }
 
-    const availableW = containerSize.width - EDGE_PADDING * 2;
-    const availableH = containerSize.height - EDGE_PADDING * 2;
+    const availableW = containerSize.width - CROP_EDGE_PADDING * 2;
+    const availableH = containerSize.height - CROP_EDGE_PADDING * 2;
     const imageRatio = visualImageW / visualImageH;
     const containerRatio = availableW / availableH;
 
@@ -471,7 +465,9 @@ export const Cropper: React.FC<CropperProps> = ({
             // 计算新的旋转角度
             const currentRotation = stateRef.current.rotation;
             let newRotation = (currentRotation + deltaAngle) % 360;
-            if (newRotation < 0) newRotation += 360;
+            if (newRotation < 0) {
+              newRotation += 360;
+            }
 
             // 计算新的偏移（增量更新）
             const currentOffset = stateRef.current.imageOffset;
@@ -589,31 +585,43 @@ export const Cropper: React.FC<CropperProps> = ({
           // 1. Min Size
           if (newW < MIN_CROP_SIZE) {
             newW = MIN_CROP_SIZE;
-            if (aspectRatio !== undefined) newH = newW / aspectRatio;
+            if (aspectRatio !== undefined) {
+              newH = newW / aspectRatio;
+            }
           }
           if (newH < MIN_CROP_SIZE) {
             newH = MIN_CROP_SIZE;
-            if (aspectRatio !== undefined) newW = newH * aspectRatio;
+            if (aspectRatio !== undefined) {
+              newW = newH * aspectRatio;
+            }
           }
 
           // 2. Max Size (Image Bounds)
           if (newW > imgW) {
             newW = imgW;
-            if (aspectRatio !== undefined) newH = newW / aspectRatio;
+            if (aspectRatio !== undefined) {
+              newH = newW / aspectRatio;
+            }
           }
           if (newH > imgH) {
             newH = imgH;
-            if (aspectRatio !== undefined) newW = newH * aspectRatio;
+            if (aspectRatio !== undefined) {
+              newW = newH * aspectRatio;
+            }
           }
 
           // Double check fit (sometimes recalculating one dimension might break the other limit)
           if (newW > imgW) {
             newW = imgW;
-            if (aspectRatio !== undefined) newH = newW / aspectRatio;
+            if (aspectRatio !== undefined) {
+              newH = newW / aspectRatio;
+            }
           }
           if (newH > imgH) {
             newH = imgH;
-            if (aspectRatio !== undefined) newW = newH * aspectRatio;
+            if (aspectRatio !== undefined) {
+              newW = newH * aspectRatio;
+            }
           }
 
           setCustomCropSize({width: newW, height: newH});
@@ -693,8 +701,6 @@ export const Cropper: React.FC<CropperProps> = ({
     containerSize.height > 0 &&
     imageDisplaySize.width > 0 &&
     imageNaturalSize.width > 0;
-
-  const isFreeMode = aspectRatio === undefined;
 
   const imageStyle = useMemo(() => {
     return {
@@ -777,20 +783,20 @@ export const Cropper: React.FC<CropperProps> = ({
   const handleStyles = useMemo(
     () => ({
       tl: {
-        left: cropBoxX - HANDLE_SIZE / 2,
-        top: cropBoxY - HANDLE_SIZE / 2,
+        left: cropBoxX - CROP_HANDLE_SIZE / 2,
+        top: cropBoxY - CROP_HANDLE_SIZE / 2,
       },
       tr: {
-        left: cropBoxX + cropBoxSize.width - HANDLE_SIZE / 2,
-        top: cropBoxY - HANDLE_SIZE / 2,
+        left: cropBoxX + cropBoxSize.width - CROP_HANDLE_SIZE / 2,
+        top: cropBoxY - CROP_HANDLE_SIZE / 2,
       },
       bl: {
-        left: cropBoxX - HANDLE_SIZE / 2,
-        top: cropBoxY + cropBoxSize.height - HANDLE_SIZE / 2,
+        left: cropBoxX - CROP_HANDLE_SIZE / 2,
+        top: cropBoxY + cropBoxSize.height - CROP_HANDLE_SIZE / 2,
       },
       br: {
-        left: cropBoxX + cropBoxSize.width - HANDLE_SIZE / 2,
-        top: cropBoxY + cropBoxSize.height - HANDLE_SIZE / 2,
+        left: cropBoxX + cropBoxSize.width - CROP_HANDLE_SIZE / 2,
+        top: cropBoxY + cropBoxSize.height - CROP_HANDLE_SIZE / 2,
       },
     }),
     [cropBoxSize.height, cropBoxSize.width, cropBoxX, cropBoxY],
@@ -884,35 +890,35 @@ const styles = StyleSheet.create({
   },
   corner: {
     position: 'absolute',
-    width: CORNER_LENGTH,
-    height: CORNER_LENGTH,
+    width: CROP_CORNER_LENGTH,
+    height: CROP_CORNER_LENGTH,
   },
   cornerTL: {
     top: -1,
     left: -1,
-    borderTopWidth: CORNER_THICKNESS,
-    borderLeftWidth: CORNER_THICKNESS,
+    borderTopWidth: CROP_CORNER_THICKNESS,
+    borderLeftWidth: CROP_CORNER_THICKNESS,
     borderColor: 'white',
   },
   cornerTR: {
     top: -1,
     right: -1,
-    borderTopWidth: CORNER_THICKNESS,
-    borderRightWidth: CORNER_THICKNESS,
+    borderTopWidth: CROP_CORNER_THICKNESS,
+    borderRightWidth: CROP_CORNER_THICKNESS,
     borderColor: 'white',
   },
   cornerBL: {
     bottom: -1,
     left: -1,
-    borderBottomWidth: CORNER_THICKNESS,
-    borderLeftWidth: CORNER_THICKNESS,
+    borderBottomWidth: CROP_CORNER_THICKNESS,
+    borderLeftWidth: CROP_CORNER_THICKNESS,
     borderColor: 'white',
   },
   cornerBR: {
     bottom: -1,
     right: -1,
-    borderBottomWidth: CORNER_THICKNESS,
-    borderRightWidth: CORNER_THICKNESS,
+    borderBottomWidth: CROP_CORNER_THICKNESS,
+    borderRightWidth: CROP_CORNER_THICKNESS,
     borderColor: 'white',
   },
   gridVertical: {
@@ -943,8 +949,8 @@ const styles = StyleSheet.create({
   },
   handleContainer: {
     position: 'absolute',
-    width: HANDLE_SIZE,
-    height: HANDLE_SIZE,
+    width: CROP_HANDLE_SIZE,
+    height: CROP_HANDLE_SIZE,
     zIndex: 100,
   },
 });

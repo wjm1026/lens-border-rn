@@ -12,9 +12,8 @@ import {
 } from 'lucide-react-native';
 
 import {colors} from '../../theme';
+import type {TabId} from '../../types';
 import {createStyles} from './styles';
-
-export type TabId = 'layout' | 'crop' | 'border' | 'bg' | 'info' | 'export';
 
 type TabItem = {
   id: TabId;

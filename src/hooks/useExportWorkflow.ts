@@ -1,7 +1,8 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {View} from 'react-native';
 
-import {useSaveToCameraRoll, type ExportSettings} from './useSaveToCameraRoll';
+import {useSaveToCameraRoll} from './useSaveToCameraRoll';
+import type {ExportSettings} from '../types';
 
 export const useExportWorkflow = (exportSettings: ExportSettings) => {
   const highResCaptureRef = useRef<View>(null);

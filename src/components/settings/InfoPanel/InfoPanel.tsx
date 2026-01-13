@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import {RotateCcw} from 'lucide-react-native';
 
-import {DEFAULT_EXIF_INFO} from '../../../config';
+import {DEFAULT_EXIF_INFO, INFO_LAYOUT_OPTIONS} from '../../../config';
 import {colors} from '../../../theme';
 import {Slider, SegmentedControl, ColorPicker} from '../../ui';
 import CameraSelector from '../../CameraSelector';
@@ -18,17 +18,13 @@ import type {FrameSettings, LineStyle} from '../../../types';
 import type {CameraPreset} from '../../../data/cameraPresets';
 import {normalizeCameraModel} from '../../../utils/exifUtils';
 
-const INFO_LAYOUT_OPTIONS = [
-  {id: 'centered' as const, label: '居中双行'},
-  {id: 'classic' as const, label: '经典左右'},
-];
-
 interface InfoPanelProps {
   settings: FrameSettings;
   updateSettings: <K extends keyof FrameSettings>(
     key: K,
     value: FrameSettings[K],
   ) => void;
+  patchSettings: (patch: Partial<FrameSettings>) => void;
   onReset: () => void;
   exifCamera?: string;
 }
@@ -36,6 +32,7 @@ interface InfoPanelProps {
 export default function InfoPanel({
   settings,
   updateSettings,
+  patchSettings,
   onReset,
   exifCamera,
 }: InfoPanelProps) {
@@ -57,23 +54,27 @@ export default function InfoPanel({
   const handleCameraSelect = useCallback(
     (preset: CameraPreset | null) => {
       if (preset) {
-        updateSettings('selectedCameraPresetId', preset.id);
-        updateSettings('customExif', {
-          ...settings.customExif,
-          model: normalizeCameraModel(preset.model),
-          lens: preset.defaultLens || settings.customExif.lens,
+        patchSettings({
+          selectedCameraPresetId: preset.id,
+          customExif: {
+            ...settings.customExif,
+            model: normalizeCameraModel(preset.model),
+            lens: preset.defaultLens || settings.customExif.lens,
+          },
         });
         return;
       }
 
-      updateSettings('selectedCameraPresetId', null);
-      updateSettings('customExif', {
-        ...settings.customExif,
-        model: undefined,
-        lens: undefined,
+      patchSettings({
+        selectedCameraPresetId: null,
+        customExif: {
+          ...settings.customExif,
+          model: undefined,
+          lens: undefined,
+        },
       });
     },
-    [settings.customExif, updateSettings],
+    [patchSettings, settings.customExif],
   );
 
   const cameraHint = exifCamera;

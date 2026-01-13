@@ -7,7 +7,7 @@ import {
   PREVIEW_INFO_BASE_BOTTOM,
 } from '../../config';
 import {colors} from '../../theme';
-import type {FrameSettings, CropRect} from '../../types';
+import type {CropFlip, CropRect, FrameSettings} from '../../types';
 import {BackgroundLayer} from '../BackgroundLayer';
 import {InfoOverlay} from '../InfoOverlay';
 
@@ -18,7 +18,7 @@ interface SharedPreviewProps {
   framePadding: number;
   cropRect?: CropRect;
   cropRotation?: number;
-  cropFlip?: {horizontal: boolean; vertical: boolean};
+  cropFlip?: CropFlip;
   onInfoOffsetChange?: (offset: {x: number; y: number}) => void;
   exifPadding?: number;
   infoBaseBottom?: number;
@@ -34,7 +34,7 @@ export const SharedPreview = React.memo(
     cropRect = DEFAULT_CROP_RECT,
     cropRotation = 0,
     cropFlip = {horizontal: false, vertical: false},
-    onInfoOffsetChange = () => {},
+    onInfoOffsetChange,
     exifPadding = PREVIEW_EXIF_PADDING,
     infoBaseBottom = PREVIEW_INFO_BASE_BOTTOM,
     onImageLoad,

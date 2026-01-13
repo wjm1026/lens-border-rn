@@ -1,13 +1,13 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 
 import {DEFAULT_CROP_RECT, MIN_CROP_ZOOM} from '../config';
-import type {CropAspectId, CropRect} from '../types';
+import type {CropAspectId, CropControls, CropFlip, CropRect} from '../types';
 
-export const useCropControls = (imageUri: string) => {
+export const useCropControls = (imageUri: string): CropControls => {
   const [cropAspect, setCropAspect] = useState<CropAspectId>('free');
   const [cropZoom, setCropZoom] = useState(MIN_CROP_ZOOM);
   const [cropRotation, setCropRotation] = useState(0);
-  const [cropFlip, setCropFlip] = useState({
+  const [cropFlip, setCropFlip] = useState<CropFlip>({
     horizontal: false,
     vertical: false,
   });

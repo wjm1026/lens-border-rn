@@ -1,9 +1,4 @@
-/*
- * @Author: wjm 791215714@qq.com
- * @Date: 2026-01-11 19:34:41
- * @Description: 照片编辑主屏幕
- */
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {StatusBar, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -13,19 +8,18 @@ import {
   ImagePreview,
   HighResExport,
   Cropper,
-  type TabId,
 } from '../../components';
 import {colors} from '../../theme';
 import {useCropControls} from '../../hooks/useCropControls';
+import {useExportSettings} from '../../hooks/useExportSettings';
 import {useImageAspectRatio} from '../../hooks/useImageAspectRatio';
 import {useExportWorkflow} from '../../hooks/useExportWorkflow';
 import {useFrameSettings} from '../../hooks/useFrameSettings';
 import {useInitialFrameSettings} from '../../hooks/useInitialFrameSettings';
 import {usePreviewAspectRatio} from '../../hooks/usePreviewAspectRatio';
-import type {ExportSettings} from '../../hooks/useSaveToCameraRoll';
 import EditorSettingsPanel from './EditorSettingsPanel';
 import {styles} from './styles';
-import type {ParsedExifData} from '../../types';
+import type {ParsedExifData, TabId} from '../../types';
 
 interface EditorScreenProps {
   imageUri: string;
@@ -43,20 +37,18 @@ export default function EditorScreen({
 
   const initialSettings = useInitialFrameSettings(initialExif);
 
-  const {settings, updateSettings, updateInfoOffset, resetInfoSettings} =
-    useFrameSettings(initialSettings);
+  const {
+    settings,
+    updateSettings,
+    patchSettings,
+    updateInfoOffset,
+    resetInfoSettings,
+  } = useFrameSettings(initialSettings);
   const imageAspectRatio = useImageAspectRatio(imageUri);
   const cropControls = useCropControls(imageUri);
 
   // 导出设置
-  const exportSettings: ExportSettings = useMemo(
-    () => ({
-      format: settings.exportFormat === 'jpeg' ? 'jpg' : 'png',
-      quality: settings.exportQuality,
-      scale: settings.exportScale,
-    }),
-    [settings.exportFormat, settings.exportQuality, settings.exportScale],
-  );
+  const exportSettings = useExportSettings(settings);
 
   const {
     previewCaptureRef,
@@ -71,7 +63,6 @@ export default function EditorScreen({
   const {previewAspectRatio} = usePreviewAspectRatio({
     imageAspectRatio,
     cropRect: cropControls.cropRect,
-    cropRotation: cropControls.cropRotation,
     layoutAspectRatio: settings.aspectRatio,
   });
 
@@ -127,6 +118,7 @@ export default function EditorScreen({
           onClose={handleClosePanel}
           settings={settings}
           updateSettings={updateSettings}
+          patchSettings={patchSettings}
           cropControls={cropControls}
           onResetInfo={resetInfoSettings}
           onSave={requestExport}

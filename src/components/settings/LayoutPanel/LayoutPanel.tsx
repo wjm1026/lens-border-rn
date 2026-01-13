@@ -3,14 +3,8 @@ import {View, StyleSheet} from 'react-native';
 
 import {Slider} from '../../ui/Slider';
 import {SegmentedControl} from '../../ui/SegmentedControl';
+import {ASPECT_RATIO_OPTIONS} from '../../../config';
 import type {FrameSettings, AspectRatio} from '../../../types';
-
-const ASPECT_RATIO_OPTIONS = [
-  {id: 'original' as const, label: '适应'},
-  {id: 'square' as const, label: '1:1'},
-  {id: 'portrait' as const, label: '3:4'},
-  {id: 'landscape' as const, label: '4:3'},
-];
 
 interface LayoutPanelProps {
   settings: FrameSettings;

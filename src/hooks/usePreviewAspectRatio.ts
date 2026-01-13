@@ -5,14 +5,12 @@ import type {AspectRatio, CropRect} from '../types';
 interface PreviewAspectParams {
   imageAspectRatio: number;
   cropRect: CropRect;
-  cropRotation: number;
   layoutAspectRatio: AspectRatio;
 }
 
 export const usePreviewAspectRatio = ({
   imageAspectRatio,
   cropRect,
-  cropRotation,
   layoutAspectRatio,
 }: PreviewAspectParams) => {
   const effectiveImageAspectRatio = useMemo(() => {

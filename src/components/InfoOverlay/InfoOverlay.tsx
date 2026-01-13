@@ -14,7 +14,7 @@ import {DEFAULT_EXIF_INFO} from '../../config';
 interface InfoOverlayProps {
   settings: FrameSettings;
   framePadding: number;
-  onOffsetChange: (offset: {x: number; y: number}) => void;
+  onOffsetChange?: (offset: {x: number; y: number}) => void;
   baseBottom?: number;
 }
 
@@ -51,7 +51,7 @@ export default function InfoOverlay({
           dragStartRef.current = offsetRef.current;
         },
         onPanResponderMove: (_evt, gesture) => {
-          onOffsetChange({
+          onOffsetChange?.({
             x: dragStartRef.current.x + gesture.dx,
             y: dragStartRef.current.y + gesture.dy,
           });

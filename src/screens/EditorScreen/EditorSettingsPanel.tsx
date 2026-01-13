@@ -9,22 +9,8 @@ import {
   FloatingPanel,
   InfoPanel,
   LayoutPanel,
-  type TabId,
 } from '../../components';
-import type {CropAspectId, FrameSettings} from '../../types';
-
-type CropControls = {
-  cropAspect: CropAspectId;
-  cropZoom: number;
-  cropRotation: number;
-  cropFlip: {horizontal: boolean; vertical: boolean};
-  minZoom: number;
-  setCropAspect: (id: CropAspectId) => void;
-  setCropZoom: (value: number) => void;
-  setCropRotation: (value: number) => void;
-  setCropFlip: (value: {horizontal: boolean; vertical: boolean}) => void;
-  handleRotateStep: (delta: number) => void;
-};
+import type {CropControls, FrameSettings, TabId} from '../../types';
 
 interface EditorSettingsPanelProps {
   activeTab: TabId;
@@ -35,6 +21,7 @@ interface EditorSettingsPanelProps {
     key: K,
     value: FrameSettings[K],
   ) => void;
+  patchSettings: (patch: Partial<FrameSettings>) => void;
   cropControls: CropControls;
   onResetInfo: () => void;
   onSave: () => void;
@@ -47,6 +34,7 @@ export default function EditorSettingsPanel({
   onClose,
   settings,
   updateSettings,
+  patchSettings,
   cropControls,
   onResetInfo,
   onSave,
@@ -79,7 +67,11 @@ export default function EditorSettingsPanel({
       break;
     case 'bg':
       panelContent = (
-        <BackgroundPanel settings={settings} updateSettings={updateSettings} />
+        <BackgroundPanel
+          settings={settings}
+          updateSettings={updateSettings}
+          patchSettings={patchSettings}
+        />
       );
       break;
     case 'info':
@@ -87,6 +79,7 @@ export default function EditorSettingsPanel({
         <InfoPanel
           settings={settings}
           updateSettings={updateSettings}
+          patchSettings={patchSettings}
           onReset={onResetInfo}
         />
       );
