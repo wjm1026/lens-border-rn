@@ -22,14 +22,6 @@ interface InfoOverlayProps {
   baseBottom?: number;
 }
 
-const resolveInfoText = (value: string | undefined, fallback: string) => {
-  if (!value) {
-    return fallback;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : fallback;
-};
-
 const toFontWeight = (value: number): TextStyle['fontWeight'] =>
   `${value}` as TextStyle['fontWeight'];
 
@@ -151,9 +143,6 @@ export default function InfoOverlay({
     return null;
   }
 
-  // 如果没有 onCustomExifChange 回调，使用静态显示模式
-  const isEditable = !!onCustomExifChange;
-
   return (
     <View
       style={[styles.container, containerStyle]}
@@ -187,7 +176,7 @@ export default function InfoOverlay({
               style={[styles.modelText, line1Style]}
               textAlign="left"
             />
-            <View style={{marginTop: 2}}>
+            <View style={styles.marginTopSmall}>
               <EditableText
                 value={lensValue}
                 placeholder={lensPlaceholder}
@@ -205,7 +194,7 @@ export default function InfoOverlay({
               style={line2Style}
               textAlign="right"
             />
-            <View style={{marginTop: 2}}>
+            <View style={styles.marginTopSmall}>
               <EditableText
                 value={dateValue}
                 placeholder={datePlaceholder}
@@ -241,5 +230,8 @@ const styles = StyleSheet.create({
   },
   modelText: {
     textTransform: 'uppercase',
+  },
+  marginTopSmall: {
+    marginTop: 2,
   },
 });

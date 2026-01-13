@@ -110,7 +110,7 @@ export default function EditableText({
     }
   }, [isEditing, keyboardHeight, elementY, screenHeight, translateY]);
 
-  const handleLayout = (event: LayoutChangeEvent) => {
+  const handleLayout = (_event: LayoutChangeEvent) => {
     // 获取元素在屏幕上的 Y 坐标
     containerRef.current?.measureInWindow((x, y, width, height) => {
       setElementY(y + height);

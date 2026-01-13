@@ -71,7 +71,7 @@ export default function EditorScreen({
     (key: keyof typeof settings.customExif, value: string) => {
       updateSettings('customExif', {...settings.customExif, [key]: value});
     },
-    [settings.customExif, updateSettings],
+    [settings, updateSettings],
   );
 
   return (
