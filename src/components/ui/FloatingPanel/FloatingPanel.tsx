@@ -1,14 +1,29 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Animated,
+  LayoutAnimation,
   LayoutChangeEvent,
+  Platform,
   ScrollView,
   StyleSheet,
+  UIManager,
   useWindowDimensions,
   View,
 } from 'react-native';
 
+// 在 Android 上启用 LayoutAnimation
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 import {colors} from '../../../theme';
+import {
+  FLOATING_PANEL_ANIMATION,
+  LAYOUT_ANIMATION_CONFIG,
+} from '../../../config';
 
 interface FloatingPanelProps {
   children: React.ReactNode;
@@ -17,11 +32,14 @@ interface FloatingPanelProps {
   maxHeightRatio?: number;
   onLayout?: (event: LayoutChangeEvent) => void;
   onDismissComplete?: () => void;
+  isSliding?: boolean;
 }
 
-const ANIMATION_DURATION = 250;
-const CONTENT_ANIMATION_DURATION = 150;
-const SLIDE_DISTANCE = 80;
+const {
+  duration: ANIMATION_DURATION,
+  contentAnimationDuration: CONTENT_ANIMATION_DURATION,
+  slideDistance: SLIDE_DISTANCE,
+} = FLOATING_PANEL_ANIMATION;
 
 export default function FloatingPanel({
   children,
@@ -30,6 +48,7 @@ export default function FloatingPanel({
   maxHeightRatio = 0.55,
   onLayout,
   onDismissComplete,
+  isSliding,
 }: FloatingPanelProps) {
   const {height} = useWindowDimensions();
   const maxHeight = Math.max(240, height * maxHeightRatio);
@@ -38,6 +57,10 @@ export default function FloatingPanel({
     useState<React.ReactNode>(children);
   const prevContentKeyRef = useRef(contentKey);
   const isFirstRender = useRef(true);
+  // 追踪内容切换动画是否正在进行中
+  const isContentAnimating = useRef(false);
+  // 缓存最新的 children，用于动画完成后更新
+  const pendingChildrenRef = useRef<React.ReactNode>(children);
 
   // Animation values
   const translateY = useRef(
@@ -84,7 +107,20 @@ export default function FloatingPanel({
     });
   }, [onDismissComplete, opacity, translateY]);
 
-  // 追踪visible的变化
+  // 滑拽时的幽灵化效果
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    Animated.timing(opacity, {
+      toValue: isSliding ? 0 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isSliding, opacity, visible]);
+
+  // 状态追踪
   const prevVisibleRef = useRef(visible);
 
   // 面板显示/隐藏动画 - 只在visible真正变化时触发
@@ -123,6 +159,9 @@ export default function FloatingPanel({
 
   // 内容切换动画 - 只在面板已可见时且切换tab才触发
   useEffect(() => {
+    // 始终更新缓存的 children
+    pendingChildrenRef.current = children;
+
     // 跳过首次渲染
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -134,12 +173,20 @@ export default function FloatingPanel({
       return;
     }
 
-    // 如果contentKey没变化，直接更新内容（属性变化）
+    // 如果动画正在进行中，忽略此次更新（children 已被缓存）
+    if (isContentAnimating.current) {
+      return;
+    }
+
+    // 如果contentKey没变化，说明是内容内部更新（如切换背景类型），配置高度变化动画
     if (contentKey === prevContentKeyRef.current) {
+      LayoutAnimation.configureNext(LAYOUT_ANIMATION_CONFIG);
       setDisplayedContent(children);
       return;
     }
 
+    // 开始 tab 切换动画
+    isContentAnimating.current = true;
     prevContentKeyRef.current = contentKey;
 
     // 淡出 + 轻微左移
@@ -156,21 +203,34 @@ export default function FloatingPanel({
       }),
     ]).start(({finished}) => {
       if (finished) {
-        setDisplayedContent(children);
-        // 从右侧淡入
+        // 在更新内容之前配置高度变化动画
+        LayoutAnimation.configureNext(LAYOUT_ANIMATION_CONFIG);
+        // 使用最新缓存的 children，而不是闭包中的旧值
+        setDisplayedContent(pendingChildrenRef.current);
+        // 从右侧淡入 - 等待一帧确保布局完成后再开始动画
         contentTranslateX.setValue(10);
-        Animated.parallel([
-          Animated.timing(contentOpacity, {
-            toValue: 1,
-            duration: CONTENT_ANIMATION_DURATION,
-            useNativeDriver: true,
-          }),
-          Animated.timing(contentTranslateX, {
-            toValue: 0,
-            duration: CONTENT_ANIMATION_DURATION,
-            useNativeDriver: true,
-          }),
-        ]).start();
+        requestAnimationFrame(() => {
+          Animated.parallel([
+            Animated.timing(contentOpacity, {
+              toValue: 1,
+              duration: CONTENT_ANIMATION_DURATION,
+              useNativeDriver: true,
+            }),
+            Animated.timing(contentTranslateX, {
+              toValue: 0,
+              duration: CONTENT_ANIMATION_DURATION,
+              useNativeDriver: true,
+            }),
+          ]).start(({finished: fadeInFinished}) => {
+            if (fadeInFinished) {
+              // 动画完成，解除锁定
+              isContentAnimating.current = false;
+            }
+          });
+        });
+      } else {
+        // 动画被中断，解除锁定
+        isContentAnimating.current = false;
       }
     });
   }, [children, contentKey, contentOpacity, contentTranslateX, visible]);
@@ -194,7 +254,8 @@ export default function FloatingPanel({
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled={!isSliding}>
           <Animated.View
             style={[
               styles.content,
@@ -235,7 +296,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 24,
+    paddingBottom: 20,
   },
 });

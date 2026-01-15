@@ -2,7 +2,7 @@ import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {ChevronLeft, Trash2} from 'lucide-react-native';
 
-import {colors} from '../../theme';
+import {colors, fontSize} from '../../theme';
 
 interface EditorHeaderProps {
   title?: string;
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.textPrimary,
-    fontSize: 17,
+    fontSize: fontSize.lg,
     fontWeight: '600',
   },
   iconButton: {

@@ -1,6 +1,6 @@
 import {StyleSheet} from 'react-native';
 
-import {colors} from '../../theme';
+import {colors, fontSize} from '../../theme';
 
 const MIN_BOTTOM_PADDING = 20;
 
@@ -22,7 +22,7 @@ export const createStyles = (bottomInset: number) =>
       flex: 1,
     },
     label: {
-      fontSize: 10,
+      fontSize: fontSize.xs,
       color: colors.textSecondary,
       marginTop: 6,
     },

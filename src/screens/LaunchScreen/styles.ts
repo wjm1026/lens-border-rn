@@ -1,6 +1,6 @@
 import {StyleSheet} from 'react-native';
 
-import {colors} from '../../theme';
+import {colors, fontSize} from '../../theme';
 
 export const styles = StyleSheet.create({
   container: {
@@ -21,7 +21,7 @@ export const styles = StyleSheet.create({
     marginBottom: 20,
   },
   logoText: {
-    fontSize: 40,
+    fontSize: fontSize.xxl,
     fontWeight: '900',
     color: colors.textPrimary,
     letterSpacing: -1,
@@ -30,7 +30,7 @@ export const styles = StyleSheet.create({
     color: colors.highlight,
   },
   subText: {
-    fontSize: 14,
+    fontSize: fontSize.base,
     color: colors.textSecondary,
     marginTop: 10,
   },
@@ -58,13 +58,13 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   uploadTitle: {
-    fontSize: 18,
+    fontSize: fontSize.lg,
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 8,
   },
   uploadHint: {
-    fontSize: 14,
+    fontSize: fontSize.base,
     color: colors.textMuted,
   },
 });

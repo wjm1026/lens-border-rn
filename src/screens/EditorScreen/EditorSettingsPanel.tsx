@@ -32,6 +32,8 @@ interface EditorSettingsPanelProps {
   onSave: () => void;
   isSaving: boolean;
   initialExif?: ParsedExifData;
+  isSliding: boolean;
+  setIsSliding: (sliding: boolean) => void;
 }
 
 type PanelRenderProps = Pick<
@@ -44,14 +46,20 @@ type PanelRenderProps = Pick<
   | 'onSave'
   | 'isSaving'
   | 'initialExif'
+  | 'isSliding'
+  | 'setIsSliding'
 >;
 
 const PANEL_RENDERERS: Record<
   TabId,
   (props: PanelRenderProps) => React.ReactNode
 > = {
-  layout: ({settings, updateSettings}) => (
-    <LayoutPanel settings={settings} updateSettings={updateSettings} />
+  layout: ({settings, updateSettings, setIsSliding}) => (
+    <LayoutPanel
+      settings={settings}
+      updateSettings={updateSettings}
+      setIsSliding={setIsSliding}
+    />
   ),
   crop: ({cropControls}) => (
     <CropPanel
@@ -64,23 +72,36 @@ const PANEL_RENDERERS: Record<
       onFlipChange={cropControls.setCropFlip}
     />
   ),
-  border: ({settings, updateSettings}) => (
-    <BorderPanel settings={settings} updateSettings={updateSettings} />
+  border: ({settings, updateSettings, setIsSliding}) => (
+    <BorderPanel
+      settings={settings}
+      updateSettings={updateSettings}
+      setIsSliding={setIsSliding}
+    />
   ),
-  bg: ({settings, updateSettings, patchSettings}) => (
+  bg: ({settings, updateSettings, patchSettings, setIsSliding}) => (
     <BackgroundPanel
       settings={settings}
       updateSettings={updateSettings}
       patchSettings={patchSettings}
+      setIsSliding={setIsSliding}
     />
   ),
-  info: ({settings, updateSettings, patchSettings, onResetInfo, initialExif}) => (
+  info: ({
+    settings,
+    updateSettings,
+    patchSettings,
+    onResetInfo,
+    initialExif,
+    setIsSliding,
+  }) => (
     <InfoPanel
       settings={settings}
       updateSettings={updateSettings}
       patchSettings={patchSettings}
       onReset={onResetInfo}
       initialExif={initialExif}
+      setIsSliding={setIsSliding}
     />
   ),
   export: ({settings, updateSettings, onSave, isSaving}) => (
@@ -105,6 +126,8 @@ export default function EditorSettingsPanel({
   onSave,
   isSaving,
   initialExif,
+  isSliding,
+  setIsSliding,
 }: EditorSettingsPanelProps) {
   const panelContent = PANEL_RENDERERS[activeTab]({
     settings,
@@ -115,6 +138,8 @@ export default function EditorSettingsPanel({
     onSave,
     isSaving,
     initialExif,
+    isSliding,
+    setIsSliding,
   });
 
   return (
@@ -122,7 +147,10 @@ export default function EditorSettingsPanel({
       {isOpen && (
         <Pressable style={styles.panelDismissOverlay} onPress={onClose} />
       )}
-      <FloatingPanel visible={isOpen} contentKey={activeTab}>
+      <FloatingPanel
+        visible={isOpen}
+        contentKey={activeTab}
+        isSliding={isSliding}>
         {panelContent}
       </FloatingPanel>
     </>

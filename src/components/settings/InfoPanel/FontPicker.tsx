@@ -11,7 +11,7 @@ import {
 import {ChevronDown} from 'lucide-react-native';
 
 import {useMenuPosition} from '../../../hooks/useMenuPosition';
-import {colors} from '../../../theme';
+import {colors, fontSize} from '../../../theme';
 import {FONT_OPTIONS} from '../../../config';
 
 const MENU_MAX_HEIGHT = 260;
@@ -48,8 +48,7 @@ export default function FontPicker({value, onChange}: FontPickerProps) {
           onPress={openMenu}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel="选择字体"
-        >
+          accessibilityLabel="选择字体">
           <Text style={styles.triggerText} numberOfLines={1}>
             {selectedOption?.name || value}
           </Text>
@@ -61,8 +60,7 @@ export default function FontPicker({value, onChange}: FontPickerProps) {
         visible={isOpen}
         transparent
         animationType="fade"
-        onRequestClose={closeMenu}
-      >
+        onRequestClose={closeMenu}>
         <Pressable style={styles.modalOverlay} onPress={closeMenu}>
           <Pressable
             style={[
@@ -74,29 +72,28 @@ export default function FontPicker({value, onChange}: FontPickerProps) {
                 maxHeight: menuPosition.maxHeight,
               },
             ]}
-            onPress={e => e.stopPropagation()}
-          >
+            onPress={e => e.stopPropagation()}>
             <ScrollView
               style={styles.menuScroll}
               contentContainerStyle={styles.menuContent}
-              showsVerticalScrollIndicator={false}
-            >
+              showsVerticalScrollIndicator={false}>
               {FONT_OPTIONS.map(option => {
                 const isActive = option.id === value;
                 return (
                   <TouchableOpacity
                     key={option.id}
-                    style={[styles.optionRow, isActive && styles.optionRowActive]}
+                    style={[
+                      styles.optionRow,
+                      isActive && styles.optionRowActive,
+                    ]}
                     onPress={() => handleSelect(option.id)}
-                    activeOpacity={0.8}
-                  >
+                    activeOpacity={0.8}>
                     <Text
                       style={[
                         styles.optionText,
                         isActive && styles.optionTextActive,
                         {fontFamily: option.id},
-                      ]}
-                    >
+                      ]}>
                       {option.name}
                     </Text>
                     {isActive && <View style={styles.selectedDot} />}
@@ -124,7 +121,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   triggerText: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
   },
   modalOverlay: {
@@ -161,7 +158,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
   },
   optionTextActive: {

@@ -1,6 +1,16 @@
-import {useMemo} from 'react';
+import {useMemo, useRef} from 'react';
+import {LayoutAnimation, Platform, UIManager} from 'react-native';
 
+import {LAYOUT_ANIMATION_CONFIG} from '../config';
 import type {AspectRatio, CropRect} from '../types';
+
+// 在 Android 上启用 LayoutAnimation
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface PreviewAspectParams {
   imageAspectRatio: number;
@@ -13,6 +23,16 @@ export const usePreviewAspectRatio = ({
   cropRect,
   layoutAspectRatio,
 }: PreviewAspectParams) => {
+  // 追踪 layoutAspectRatio 变化，在变化**之前**配置动画
+  const prevLayoutAspectRatioRef = useRef(layoutAspectRatio);
+
+  // 在 layoutAspectRatio 变化时立即触发 LayoutAnimation
+  // 注意：这里使用 useMemo 而不是 useEffect，因为需要在渲染**之前**配置动画
+  if (prevLayoutAspectRatioRef.current !== layoutAspectRatio) {
+    prevLayoutAspectRatioRef.current = layoutAspectRatio;
+    LayoutAnimation.configureNext(LAYOUT_ANIMATION_CONFIG);
+  }
+
   const effectiveImageAspectRatio = useMemo(() => {
     const safeImageRatio = imageAspectRatio > 0 ? imageAspectRatio : 1;
     // 不根据旋转角度自动调整宽高比，完全由用户控制

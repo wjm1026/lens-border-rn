@@ -38,6 +38,6 @@ export const DEFAULT_SETTINGS: FrameSettings = {
   },
   customExif: {},
   exportFormat: 'jpeg',
-  exportQuality: 0.9,
-  exportScale: 4,
+  exportQuality: 0.85,
+  exportScale: 3,
 };

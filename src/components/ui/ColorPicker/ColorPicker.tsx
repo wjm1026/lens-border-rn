@@ -9,10 +9,11 @@ import {
   TextInput,
   PanResponder,
   Pressable,
+  Animated,
   type ViewStyle,
 } from 'react-native';
 import Svg, {Rect, Defs, LinearGradient, Stop} from 'react-native-svg';
-import {colors} from '../../../theme';
+import {colors, fontSize} from '../../../theme';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 const PICKER_WIDTH = 240;
@@ -23,6 +24,8 @@ interface ColorPickerProps {
   onChange: (color: string) => void;
   label?: string;
   size?: number;
+  onSlidingStart?: () => void;
+  onSlidingComplete?: () => void;
 }
 
 const PRESET_COLORS = [
@@ -125,6 +128,8 @@ export function ColorPicker({
   onChange,
   label,
   size = 40,
+  onSlidingStart,
+  onSlidingComplete,
 }: ColorPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const initialHsv = hexToHsv(color);
@@ -132,8 +137,19 @@ export function ColorPicker({
   const [saturation, setSaturation] = useState(initialHsv.s);
   const [brightness, setBrightness] = useState(initialHsv.v);
   const [hexInput, setHexInput] = useState(color.replace('#', ''));
+  const [isInteracting, setIsInteracting] = useState(false);
 
-  // 弹窗位置
+  // 动画
+  const pickerOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.timing(pickerOpacity, {
+      toValue: isInteracting ? 0 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isInteracting, pickerOpacity]);
+
   const [pickerPosition, setPickerPosition] = useState<{
     top: number;
     left: number;
@@ -168,7 +184,7 @@ export function ColorPicker({
         left: `${saturation}%`,
         top: `${100 - brightness}%`,
         borderColor: brightness > 50 ? '#000' : '#FFF',
-      }) as ViewStyle,
+      } as ViewStyle),
     [brightness, saturation],
   );
 
@@ -252,6 +268,8 @@ export function ColorPicker({
       onShouldBlockNativeResponder: () => true, // 阻止原生滚动
       onPanResponderGrant: evt => {
         const {pageX, pageY} = evt.nativeEvent;
+        setIsInteracting(true);
+        onSlidingStart?.();
         panelRef.current?.measureInWindow((x, y, width, height) => {
           panelPosition.current = {x, y, width, height};
           const relativeX = pageX - x;
@@ -280,6 +298,14 @@ export function ColorPicker({
           setBrightness(v);
         }
       },
+      onPanResponderRelease: () => {
+        setIsInteracting(false);
+        onSlidingComplete?.();
+      },
+      onPanResponderTerminate: () => {
+        setIsInteracting(false);
+        onSlidingComplete?.();
+      },
     }),
   ).current;
 
@@ -292,6 +318,8 @@ export function ColorPicker({
       onShouldBlockNativeResponder: () => true, // 阻止原生滚动
       onPanResponderGrant: evt => {
         const {pageX} = evt.nativeEvent;
+        setIsInteracting(true);
+        onSlidingStart?.();
         hueRef.current?.measureInWindow((x, _y, width, height) => {
           huePosition.current = {x, y: _y, width, height};
           const relativeX = pageX - x;
@@ -308,6 +336,14 @@ export function ColorPicker({
           setHue(h);
         }
       },
+      onPanResponderRelease: () => {
+        setIsInteracting(false);
+        onSlidingComplete?.();
+      },
+      onPanResponderTerminate: () => {
+        setIsInteracting(false);
+        onSlidingComplete?.();
+      },
     }),
   ).current;
 
@@ -316,6 +352,14 @@ export function ColorPicker({
       {/* 颜色预览按钮 */}
       <TouchableOpacity
         onPress={openPicker}
+        onPressIn={() => {
+          setIsInteracting(true);
+          onSlidingStart?.();
+        }}
+        onPressOut={() => {
+          setIsInteracting(false);
+          onSlidingComplete?.();
+        }}
         activeOpacity={0.8}
         accessibilityRole="button"
         accessibilityLabel={label || '选择颜色'}>
@@ -342,140 +386,155 @@ export function ColorPicker({
         transparent
         animationType="fade"
         onRequestClose={handleClose}>
-        <Pressable style={styles.modalOverlay} onPress={handleClose}>
-          <Pressable
-            style={[
-              styles.pickerContainer,
-              {top: pickerPosition.top, left: pickerPosition.left},
-            ]}
-            onPress={e => e.stopPropagation()}>
-            {/* 色板 - 饱和度/亮度 */}
-            <View
-              ref={panelRef}
-              style={styles.panel}
-              onLayout={measurePanel}
-              {...panelPanResponder.panHandlers}>
+        <Animated.View style={[styles.flex1, {opacity: pickerOpacity}]}>
+          <Pressable style={styles.modalOverlay} onPress={handleClose}>
+            <Pressable
+              onPress={e => e.stopPropagation()}
+              style={[
+                styles.pickerContainer,
+                {
+                  top: pickerPosition.top,
+                  left: pickerPosition.left,
+                },
+              ]}>
+              {/* 色板 - 饱和度/亮度 */}
               <View
-                style={[
-                  styles.panelBackground,
-                  {backgroundColor: hueToColor(hue)},
-                ]}
-                pointerEvents="none"
-              />
-              <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Defs>
-                  <LinearGradient id="whiteGrad" x1="0" y1="0" x2="1" y2="0">
-                    <Stop offset="0" stopColor="#FFFFFF" stopOpacity="1" />
-                    <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
-                  </LinearGradient>
-                </Defs>
-                <Rect
-                  x="0"
-                  y="0"
-                  width="100%"
-                  height="100%"
-                  fill="url(#whiteGrad)"
-                />
-              </Svg>
-              <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Defs>
-                  <LinearGradient id="blackGrad" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor="#000000" stopOpacity="0" />
-                    <Stop offset="1" stopColor="#000000" stopOpacity="1" />
-                  </LinearGradient>
-                </Defs>
-                <Rect
-                  x="0"
-                  y="0"
-                  width="100%"
-                  height="100%"
-                  fill="url(#blackGrad)"
-                />
-              </Svg>
-              {/* 指示器 */}
-              <View
-                pointerEvents="none"
-                style={[styles.panelIndicator, panelIndicatorStyle]}
-              />
-            </View>
-
-            {/* 色相滑块 */}
-            <View
-              ref={hueRef}
-              style={styles.hueSlider}
-              onLayout={measureHue}
-              {...huePanResponder.panHandlers}>
-              <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Defs>
-                  <LinearGradient id="hueGrad" x1="0" y1="0" x2="1" y2="0">
-                    <Stop offset="0" stopColor="#FF0000" />
-                    <Stop offset="0.167" stopColor="#FFFF00" />
-                    <Stop offset="0.333" stopColor="#00FF00" />
-                    <Stop offset="0.5" stopColor="#00FFFF" />
-                    <Stop offset="0.667" stopColor="#0000FF" />
-                    <Stop offset="0.833" stopColor="#FF00FF" />
-                    <Stop offset="1" stopColor="#FF0000" />
-                  </LinearGradient>
-                </Defs>
-                <Rect
-                  x="0"
-                  y="0"
-                  width="100%"
-                  height="100%"
-                  fill="url(#hueGrad)"
-                  rx="12"
-                />
-              </Svg>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.hueIndicator,
-                  {
-                    left: `${(hue / 360) * 100}%`,
-                    backgroundColor: hueToColor(hue),
-                  },
-                ]}
-              />
-            </View>
-
-            {/* Hex 输入框 */}
-            <View style={styles.hexInputContainer}>
-              <Text style={styles.hexPrefix}>#</Text>
-              <TextInput
-                style={styles.hexInput}
-                value={hexInput}
-                onChangeText={handleHexInputChange}
-                maxLength={6}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                placeholderTextColor={colors.textMuted}
-              />
-            </View>
-
-            {/* 预设颜色 */}
-            <View style={styles.swatchRow}>
-              {PRESET_COLORS.map(presetColor => (
-                <TouchableOpacity
-                  key={presetColor}
+                ref={panelRef}
+                style={styles.panel}
+                onLayout={measurePanel}
+                {...panelPanResponder.panHandlers}>
+                <View
                   style={[
-                    styles.swatch,
-                    {backgroundColor: presetColor},
-                    localColor.toUpperCase() === presetColor.toUpperCase() &&
-                      styles.swatchActive,
+                    styles.panelBackground,
+                    {backgroundColor: hueToColor(hue)},
                   ]}
-                  onPress={() => handlePresetSelect(presetColor)}
-                  activeOpacity={0.7}
+                  pointerEvents="none"
                 />
-              ))}
-            </View>
+                <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+                  <Defs>
+                    <LinearGradient id="whiteGrad" x1="0" y1="0" x2="1" y2="0">
+                      <Stop offset="0" stopColor="#FFFFFF" stopOpacity="1" />
+                      <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect
+                    x="0"
+                    y="0"
+                    width="100%"
+                    height="100%"
+                    fill="url(#whiteGrad)"
+                  />
+                </Svg>
+                <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+                  <Defs>
+                    <LinearGradient id="blackGrad" x1="0" y1="0" x2="0" y2="1">
+                      <Stop offset="0" stopColor="#000000" stopOpacity="0" />
+                      <Stop offset="1" stopColor="#000000" stopOpacity="1" />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect
+                    x="0"
+                    y="0"
+                    width="100%"
+                    height="100%"
+                    fill="url(#blackGrad)"
+                  />
+                </Svg>
+                {/* 指示器 */}
+                <View
+                  pointerEvents="none"
+                  style={[styles.panelIndicator, panelIndicatorStyle]}
+                />
+              </View>
+
+              {/* 色相滑块 */}
+              <View
+                ref={hueRef}
+                style={styles.hueSlider}
+                onLayout={measureHue}
+                {...huePanResponder.panHandlers}>
+                <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+                  <Defs>
+                    <LinearGradient id="hueGrad" x1="0" y1="0" x2="1" y2="0">
+                      <Stop offset="0" stopColor="#FF0000" />
+                      <Stop offset="0.167" stopColor="#FFFF00" />
+                      <Stop offset="0.333" stopColor="#00FF00" />
+                      <Stop offset="0.5" stopColor="#00FFFF" />
+                      <Stop offset="0.667" stopColor="#0000FF" />
+                      <Stop offset="0.833" stopColor="#FF00FF" />
+                      <Stop offset="1" stopColor="#FF0000" />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect
+                    x="0"
+                    y="0"
+                    width="100%"
+                    height="100%"
+                    fill="url(#hueGrad)"
+                    rx="12"
+                  />
+                </Svg>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.hueIndicator,
+                    {
+                      left: `${(hue / 360) * 100}%`,
+                      backgroundColor: hueToColor(hue),
+                    },
+                  ]}
+                />
+              </View>
+
+              {/* Hex 输入框 */}
+              <View style={styles.hexInputContainer}>
+                <Text style={styles.hexPrefix}>#</Text>
+                <TextInput
+                  style={styles.hexInput}
+                  value={hexInput}
+                  onChangeText={handleHexInputChange}
+                  maxLength={6}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+
+              {/* 预设颜色 */}
+              <View style={styles.swatchRow}>
+                {PRESET_COLORS.map(presetColor => (
+                  <TouchableOpacity
+                    key={presetColor}
+                    style={[
+                      styles.swatch,
+                      {backgroundColor: presetColor},
+                      localColor.toUpperCase() === presetColor.toUpperCase() &&
+                        styles.swatchActive,
+                    ]}
+                    onPressIn={() => {
+                      handlePresetSelect(presetColor);
+                      setIsInteracting(true);
+                      onSlidingStart?.();
+                    }}
+                    onPressOut={() => {
+                      setIsInteracting(false);
+                      onSlidingComplete?.();
+                    }}
+                  />
+                ))}
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </Animated.View>
       </Modal>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  flex1: {
+    flex: 1,
+  },
   colorButton: {
     borderWidth: 2,
     borderColor: colors.border,
@@ -497,7 +556,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 999,
   },
   label: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -579,14 +638,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   hexPrefix: {
-    fontSize: 16,
+    fontSize: fontSize.md,
     fontWeight: '600',
     color: colors.textMuted,
     fontFamily: 'Courier',
   },
   hexInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: fontSize.md,
     fontWeight: '700',
     color: colors.textPrimary,
     fontFamily: 'Courier',

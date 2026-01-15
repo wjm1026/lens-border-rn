@@ -39,8 +39,8 @@ export const BACKGROUND_TYPES: ReadonlyArray<
 export const EXPORT_FORMAT_OPTIONS: ReadonlyArray<
   Option<FrameSettings['exportFormat']>
 > = [
-  {id: 'png', label: 'PNG'},
   {id: 'jpeg', label: 'JPEG'},
+  {id: 'png', label: 'PNG'},
 ];
 
 export const EXPORT_SCALE_OPTIONS: ReadonlyArray<Option<number>> = [

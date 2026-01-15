@@ -1,7 +1,7 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 
-import {colors} from '../../../theme';
+import {colors, fontSize as fontSizeTheme} from '../../../theme';
 import {Slider} from '../../ui';
 import FontPicker from './FontPicker';
 
@@ -12,6 +12,7 @@ interface InfoLineStyleCardProps {
   fontSize: number;
   onFontSizeChange: (size: number) => void;
   maxFontSize: number;
+  setIsSliding?: (sliding: boolean) => void;
   children?: React.ReactNode;
 }
 
@@ -22,6 +23,7 @@ export default function InfoLineStyleCard({
   fontSize,
   onFontSizeChange,
   maxFontSize,
+  setIsSliding,
   children,
 }: InfoLineStyleCardProps) {
   return (
@@ -39,6 +41,8 @@ export default function InfoLineStyleCard({
         min={10}
         max={maxFontSize}
         onChange={onFontSizeChange}
+        onSlidingStart={() => setIsSliding?.(true)}
+        onSlidingComplete={() => setIsSliding?.(false)}
         unit="px"
       />
 
@@ -57,7 +61,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 10,
+    fontSize: fontSizeTheme.xs,
     fontWeight: '700',
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -68,7 +72,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 10,
+    fontSize: fontSizeTheme.xs,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',

@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import Svg, {Defs, LinearGradient, Rect, Stop} from 'react-native-svg';
 
 import {
@@ -7,8 +7,8 @@ import {
   BACKGROUND_TYPES,
   PRESET_GRADIENTS,
 } from '../../../config';
-import {colors} from '../../../theme';
-import {Slider, SegmentedControl, ColorPicker} from '../../ui';
+import {colors, fontSize} from '../../../theme';
+import {Slider, SegmentedControl, ColorPicker, SwatchPicker} from '../../ui';
 import type {FrameSettings} from '../../../types';
 import {getGradientPoints} from '../../../utils/gradient';
 
@@ -22,12 +22,14 @@ interface BackgroundPanelProps {
     value: FrameSettings[K],
   ) => void;
   patchSettings: (patch: Partial<FrameSettings>) => void;
+  setIsSliding: (sliding: boolean) => void;
 }
 
 export default function BackgroundPanel({
   settings,
   updateSettings,
   patchSettings,
+  setIsSliding,
 }: BackgroundPanelProps) {
   const normalizedBackground = settings.backgroundColor.toLowerCase();
   const normalizedStart = settings.gradientStartColor.toLowerCase();
@@ -51,6 +53,8 @@ export default function BackgroundPanel({
         options={BACKGROUND_TYPES}
         value={settings.backgroundType}
         onChange={val => updateSettings('backgroundType', val)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
       />
 
       {/* 纯色模式 */}
@@ -65,29 +69,29 @@ export default function BackgroundPanel({
               <ColorPicker
                 color={settings.backgroundColor}
                 onChange={color => updateSettings('backgroundColor', color)}
+                onSlidingStart={() => setIsSliding(true)}
+                onSlidingComplete={() => setIsSliding(false)}
                 size={32}
               />
             </View>
           </View>
-          <View style={styles.swatchRow}>
-            {BACKGROUND_COLORS.map(color => {
-              const isActive = normalizedBackground === color.toLowerCase();
-              return (
-                <TouchableOpacity
-                  key={color}
-                  style={[
-                    styles.swatch,
-                    {backgroundColor: color},
-                    isActive && styles.swatchActive,
-                  ]}
-                  onPress={() => updateSettings('backgroundColor', color)}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`背景颜色 ${color}`}
-                />
-              );
-            })}
-          </View>
+          <SwatchPicker
+            items={BACKGROUND_COLORS}
+            onSelect={color => updateSettings('backgroundColor', color)}
+            activeId={normalizedBackground}
+            getId={color => color.toLowerCase()}
+            setIsSliding={setIsSliding}
+            containerStyle={styles.swatchRow}
+            renderItem={(color, isActive) => (
+              <View
+                style={[
+                  styles.swatch,
+                  {backgroundColor: color},
+                  isActive && styles.swatchActive,
+                ]}
+              />
+            )}
+          />
         </>
       )}
 
@@ -132,6 +136,8 @@ export default function BackgroundPanel({
             onChange={val => {
               updateSettings('gradientAngle', val);
             }}
+            onSlidingStart={() => setIsSliding(true)}
+            onSlidingComplete={() => setIsSliding(false)}
             unit="°"
           />
 
@@ -144,6 +150,8 @@ export default function BackgroundPanel({
                   onChange={color =>
                     updateGradient(color, settings.gradientEndColor)
                   }
+                  onSlidingStart={() => setIsSliding(true)}
+                  onSlidingComplete={() => setIsSliding(false)}
                   size={42}
                 />
               </View>
@@ -166,6 +174,8 @@ export default function BackgroundPanel({
                   onChange={color =>
                     updateGradient(settings.gradientStartColor, color)
                   }
+                  onSlidingStart={() => setIsSliding(true)}
+                  onSlidingComplete={() => setIsSliding(false)}
                   size={42}
                 />
               </View>
@@ -178,49 +188,47 @@ export default function BackgroundPanel({
 
           {/* 预设渐变 */}
           <Text style={styles.sectionLabel}>预设渐变</Text>
-          <View style={styles.swatchRow}>
-            {PRESET_GRADIENTS.map((preset, index) => {
-              const isActive =
-                normalizedStart === preset.start.toLowerCase() &&
-                normalizedEnd === preset.end.toLowerCase();
-              return (
-                <TouchableOpacity
-                  key={`${preset.start}-${preset.end}-${index}`}
-                  style={[
-                    styles.gradientSwatch,
-                    isActive && styles.swatchActive,
-                  ]}
-                  onPress={() => updateGradient(preset.start, preset.end)}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`预设渐变 ${index + 1}`}>
-                  <Svg
+          <SwatchPicker
+            items={PRESET_GRADIENTS}
+            onSelect={preset => updateGradient(preset.start, preset.end)}
+            activeId={`${normalizedStart}-${normalizedEnd}`}
+            getId={preset =>
+              `${preset.start.toLowerCase()}-${preset.end.toLowerCase()}`
+            }
+            setIsSliding={setIsSliding}
+            containerStyle={styles.swatchRow}
+            renderItem={(preset, isActive, index) => (
+              <View
+                style={[
+                  styles.gradientSwatch,
+                  isActive && styles.swatchActive,
+                ]}>
+                <Svg
+                  width={GRADIENT_SWATCH}
+                  height={GRADIENT_SWATCH}
+                  viewBox={`0 0 ${GRADIENT_SWATCH} ${GRADIENT_SWATCH}`}>
+                  <Defs>
+                    <LinearGradient
+                      id={`presetGrad-${index}`}
+                      x1="0"
+                      y1="0"
+                      x2="1"
+                      y2="1">
+                      <Stop offset="0" stopColor={preset.start} />
+                      <Stop offset="1" stopColor={preset.end} />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect
+                    x="0"
+                    y="0"
                     width={GRADIENT_SWATCH}
                     height={GRADIENT_SWATCH}
-                    viewBox={`0 0 ${GRADIENT_SWATCH} ${GRADIENT_SWATCH}`}>
-                    <Defs>
-                      <LinearGradient
-                        id={`presetGrad-${index}`}
-                        x1="0"
-                        y1="0"
-                        x2="1"
-                        y2="1">
-                        <Stop offset="0" stopColor={preset.start} />
-                        <Stop offset="1" stopColor={preset.end} />
-                      </LinearGradient>
-                    </Defs>
-                    <Rect
-                      x="0"
-                      y="0"
-                      width={GRADIENT_SWATCH}
-                      height={GRADIENT_SWATCH}
-                      fill={`url(#presetGrad-${index})`}
-                    />
-                  </Svg>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                    fill={`url(#presetGrad-${index})`}
+                  />
+                </Svg>
+              </View>
+            )}
+          />
         </>
       )}
 
@@ -233,6 +241,8 @@ export default function BackgroundPanel({
           max={60}
           step={1}
           onChange={val => updateSettings('blurAmount', val)}
+          onSlidingStart={() => setIsSliding(true)}
+          onSlidingComplete={() => setIsSliding(false)}
           unit="px"
         />
       )}
@@ -245,6 +255,8 @@ export default function BackgroundPanel({
         max={200}
         step={1}
         onChange={val => updateSettings('backgroundBrightness', val)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
         unit="%"
       />
       <View style={styles.brightnessHints}>
@@ -267,7 +279,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '700',
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -275,7 +287,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionValue: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -332,7 +344,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   gradientBadgeText: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '700',
     color: colors.white,
     letterSpacing: 0.6,
@@ -352,7 +364,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   colorPickerLabel: {
-    fontSize: 9,
+    fontSize: fontSize.xs,
     fontWeight: '700',
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -360,7 +372,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   colorPickerValue: {
-    fontSize: 9,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.textSecondary,
     letterSpacing: 0.4,
@@ -401,7 +413,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   hintText: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',

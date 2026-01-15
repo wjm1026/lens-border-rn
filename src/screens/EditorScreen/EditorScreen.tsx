@@ -1,5 +1,5 @@
 import React, {useCallback} from 'react';
-import {StatusBar, View} from 'react-native';
+import {Animated, StatusBar, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
@@ -35,6 +35,7 @@ export default function EditorScreen({
 }: EditorScreenProps) {
   const {activeTab, isPanelOpen, handleTabChange, closePanel} =
     useEditorPanelState();
+  const [isSliding, setIsSliding] = React.useState(false);
 
   const initialSettings = useInitialFrameSettings(initialExif);
 
@@ -74,13 +75,32 @@ export default function EditorScreen({
     [settings, updateSettings],
   );
 
+  // 用于预览区域切换的动画透明度
+  const fadeAnim = React.useRef(
+    new Animated.Value(activeTab === 'crop' ? 1 : 1),
+  ).current;
+  const [lastTab, setLastTab] = React.useState(activeTab);
+
+  React.useEffect(() => {
+    if ((activeTab === 'crop' || lastTab === 'crop') && activeTab !== lastTab) {
+      // 触发淡入淡出动画
+      fadeAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+    setLastTab(activeTab);
+  }, [activeTab, lastTab, fadeAnim]);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <SafeAreaView style={styles.content} edges={['top']}>
         <EditorHeader onBack={onReset} onDelete={onReset} />
 
-        <View style={styles.previewContainer}>
+        <Animated.View style={[styles.previewContainer, {opacity: fadeAnim}]}>
           {activeTab === 'crop' ? (
             <Cropper
               imageUri={imageUri}
@@ -107,7 +127,7 @@ export default function EditorScreen({
               cropFlip={cropControls.cropFlip}
             />
           )}
-        </View>
+        </Animated.View>
 
         <EditorSettingsPanel
           activeTab={activeTab}
@@ -121,6 +141,8 @@ export default function EditorScreen({
           onSave={requestExport}
           isSaving={isProcessing}
           initialExif={initialExif}
+          isSliding={isSliding}
+          setIsSliding={setIsSliding}
         />
       </SafeAreaView>
 

@@ -1,7 +1,11 @@
 import React, {useMemo} from 'react';
 import {Dimensions, PixelRatio, StyleSheet, View} from 'react-native';
 
-import {HIGH_RES_MAX_DIMENSION, PREVIEW_EXIF_PADDING, PREVIEW_INFO_BASE_BOTTOM} from '../../config';
+import {
+  HIGH_RES_MAX_DIMENSION,
+  PREVIEW_EXIF_PADDING,
+  PREVIEW_INFO_BASE_BOTTOM,
+} from '../../config';
 import type {CropFlip, CropRect, FrameSettings} from '../../types';
 import {useScaledSettings} from '../../hooks/useScaledSettings';
 import {SharedPreview} from './SharedPreview';
@@ -36,7 +40,7 @@ export const HighResExport = React.memo(
     captureRef,
     onReady,
   }: HighResExportProps) => {
-    // 0. 计算安全缩放倍数 (Safe Scale)
+    // 0. 计算安全缩放倍数 (恢复为相对于逻辑像素的倍数，确保比例一致)
     const safeScale = useMemo(() => {
       const logicalWidth = BASE_WIDTH * exportScale;
       const logicalHeight = logicalWidth / previewAspectRatio;
@@ -48,48 +52,52 @@ export const HighResExport = React.memo(
       const maxDim = Math.max(physicalWidth, physicalHeight);
 
       if (maxDim > HIGH_RES_MAX_DIMENSION) {
-        // 如果超过限制，计算缩小比例
-        // 比如想导出 8000px，限制 6000px -> scale 应该 * 0.75
+        // 如果超过物理极限（如 7200px），按比例缩减 exportScale
         const ratio = HIGH_RES_MAX_DIMENSION / maxDim;
-        const newScale = exportScale * ratio;
-        return newScale;
+        return exportScale * ratio;
       }
       return exportScale;
     }, [exportScale, previewAspectRatio]);
 
-    // 1. 使用 Hook 获取缩放后的配置 (使用 safeScale)
+    // 1. 获取缩放后的配置 (缩放比例必须与容器一致)
     const scaledSettings = useScaledSettings(settings, safeScale);
 
-    // 状态追踪：确保布局完成且图片加载完成
+    // 状态追踪：确保布局完成、主图就绪、背景就绪
     const [isLayoutReady, setLayoutReady] = React.useState(false);
     const [isImageReady, setImageReady] = React.useState(false);
+    const [isBgReady, setBgReady] = React.useState(
+      settings.backgroundType !== 'blur',
+    );
 
-    // 2. 计算放大后的 Viewport 尺寸
+    // 2. 计算容器尺寸 (使用 settings 原始 padding 乘以 safeScale 以获得精准导出比例)
     const viewportSize = useMemo(() => {
-      // 保持长宽比，使用 safeScale 计算
       const totalWidth = BASE_WIDTH * safeScale;
-      const contentWidth = Math.max(0, totalWidth - scaledSettings.padding * 2);
+      const contentWidth = Math.max(
+        0,
+        totalWidth - settings.padding * safeScale * 2,
+      );
       const contentHeight = contentWidth / previewAspectRatio;
 
       return {
         width: contentWidth,
         height: contentHeight,
       };
-    }, [safeScale, scaledSettings.padding, previewAspectRatio]);
+    }, [safeScale, settings.padding, previewAspectRatio]);
 
     // 3. 计算缩放后的常量
     const extraExifPadding = PREVIEW_EXIF_PADDING * safeScale;
     const baseBottom = PREVIEW_INFO_BASE_BOTTOM * safeScale;
 
-    // 4. 双重检查触发 onReady
+    // 4. 三重检查触发 onReady
     React.useEffect(() => {
-      if (isLayoutReady && isImageReady && onReady) {
-        // 使用 requestAnimationFrame 确保 UI 线程空闲，渲染已提交
-        requestAnimationFrame(() => {
+      if (isLayoutReady && isImageReady && isBgReady && onReady) {
+        // 给布局引擎额外的一些渲染时间
+        const timer = setTimeout(() => {
           onReady();
-        });
+        }, 100);
+        return () => clearTimeout(timer);
       }
-    }, [isLayoutReady, isImageReady, onReady]);
+    }, [isLayoutReady, isImageReady, isBgReady, onReady]);
 
     const handleLayout = () => {
       setLayoutReady(true);
@@ -99,24 +107,29 @@ export const HighResExport = React.memo(
       setImageReady(true);
     };
 
+    const handleBgLoad = () => {
+      setBgReady(true);
+    };
+
     return (
       <View
         style={styles.container}
         pointerEvents="none"
-        onLayout={handleLayout} // 1. 监听容器布局
-      >
+        onLayout={handleLayout}>
         <View ref={captureRef} collapsable={false}>
           <SharedPreview
             imageUri={imageUri}
-            settings={scaledSettings} // 传入放大后的配置
+            settings={scaledSettings}
             viewportSize={viewportSize}
-            framePadding={scaledSettings.padding} // 传入放大后的 padding
+            framePadding={scaledSettings.padding}
             cropRect={cropRect}
             cropRotation={cropRotation}
             cropFlip={cropFlip}
             exifPadding={extraExifPadding}
             infoBaseBottom={baseBottom}
-            onImageLoad={handleImageLoad} // 2. 监听内部图片加载
+            onImageLoad={handleImageLoad}
+            onBgLoad={handleBgLoad}
+            disableBackgroundAnimation={true}
           />
         </View>
       </View>

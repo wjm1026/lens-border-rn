@@ -14,7 +14,7 @@ import {Camera, ChevronDown, Search, Sparkles} from 'lucide-react-native';
 import {useCameraSelectorState} from '../../hooks/useCameraSelectorState';
 import {useMenuPosition} from '../../hooks/useMenuPosition';
 import {CAMERA_SELECTOR_MENU_MAX_HEIGHT} from '../../config';
-import {colors} from '../../theme';
+import {colors, fontSize} from '../../theme';
 import {type CameraBrand, type CameraPreset} from '../../data/cameraPresets';
 
 interface CameraSelectorProps {
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   triggerText: {
     flex: 1,
     marginLeft: 8,
-    fontSize: 12,
+    fontSize: fontSize.sm,
     color: 'rgba(255,255,255,0.5)',
   },
   triggerTextActive: {
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   presetBadgeText: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.accent,
   },
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
     color: colors.textPrimary,
     backgroundColor: 'rgba(255,255,255,0.05)',
-    fontSize: 12,
+    fontSize: fontSize.sm,
   },
   menuScroll: {
     flex: 1,
@@ -333,12 +333,12 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   exifTitle: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     color: colors.textPrimary,
     fontWeight: '600',
   },
   exifSubtitle: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     color: 'rgba(255,255,255,0.5)',
     marginTop: 2,
   },
@@ -362,12 +362,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59,130,246,0.15)',
   },
   brandName: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   brandCount: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     color: 'rgba(255,255,255,0.35)',
     marginLeft: 6,
   },
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   modelText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: fontSize.sm,
     color: 'rgba(255,255,255,0.75)',
   },
   emptyState: {
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     color: 'rgba(255,255,255,0.4)',
   },
 });

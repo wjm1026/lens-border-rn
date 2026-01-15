@@ -1,7 +1,6 @@
 import React, {useCallback} from 'react';
 import {
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -10,8 +9,8 @@ import {
 import {RotateCcw} from 'lucide-react-native';
 
 import {DEFAULT_EXIF_INFO, INFO_LAYOUT_OPTIONS} from '../../../config';
-import {colors} from '../../../theme';
-import {Slider, SegmentedControl, ColorPicker} from '../../ui';
+import {colors, fontSize} from '../../../theme';
+import {Slider, SegmentedControl, ColorPicker, AnimatedSwitch} from '../../ui';
 import CameraSelector from '../../CameraSelector';
 import InfoLineStyleCard from './InfoLineStyleCard';
 import type {FrameSettings, LineStyle, ParsedExifData} from '../../../types';
@@ -27,6 +26,7 @@ interface InfoPanelProps {
   patchSettings: (patch: Partial<FrameSettings>) => void;
   onReset: () => void;
   initialExif?: ParsedExifData;
+  setIsSliding: (sliding: boolean) => void;
 }
 
 export default function InfoPanel({
@@ -35,6 +35,7 @@ export default function InfoPanel({
   patchSettings,
   onReset,
   initialExif,
+  setIsSliding,
 }: InfoPanelProps) {
   const updateCustomExif = useCallback(
     (key: keyof FrameSettings['customExif'], value: string) => {
@@ -101,11 +102,9 @@ export default function InfoPanel({
 
       <View style={styles.toggleRow}>
         <Text style={styles.toggleLabel}>显示参数信息</Text>
-        <Switch
+        <AnimatedSwitch
           value={settings.showExif}
           onValueChange={val => updateSettings('showExif', val)}
-          thumbColor={colors.white}
-          trackColor={{false: colors.border, true: colors.accent}}
         />
       </View>
 
@@ -114,6 +113,8 @@ export default function InfoPanel({
         options={INFO_LAYOUT_OPTIONS}
         value={settings.infoLayout}
         onChange={val => updateSettings('infoLayout', val)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
       />
 
       <View style={styles.sectionBlock}>
@@ -133,6 +134,8 @@ export default function InfoPanel({
         <ColorPicker
           color={settings.textColor}
           onChange={color => updateSettings('textColor', color)}
+          onSlidingStart={() => setIsSliding(true)}
+          onSlidingComplete={() => setIsSliding(false)}
           size={40}
         />
       </View>
@@ -144,6 +147,8 @@ export default function InfoPanel({
         max={100}
         step={1}
         onChange={val => updateSettings('infoPadding', val)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
         unit="px"
       />
 
@@ -155,6 +160,8 @@ export default function InfoPanel({
           max={40}
           step={1}
           onChange={val => updateSettings('infoGap', val)}
+          onSlidingStart={() => setIsSliding(true)}
+          onSlidingComplete={() => setIsSliding(false)}
           unit="px"
         />
       )}
@@ -169,7 +176,8 @@ export default function InfoPanel({
             onFontSizeChange={val =>
               updateLineStyle('line1Style', {fontSize: val})
             }
-            maxFontSize={48}>
+            maxFontSize={48}
+            setIsSliding={setIsSliding}>
             <Slider
               label="字重"
               value={settings.line1Style.fontWeight}
@@ -177,6 +185,8 @@ export default function InfoPanel({
               max={900}
               step={100}
               onChange={val => updateLineStyle('line1Style', {fontWeight: val})}
+              onSlidingStart={() => setIsSliding(true)}
+              onSlidingComplete={() => setIsSliding(false)}
             />
 
             <Slider
@@ -188,6 +198,8 @@ export default function InfoPanel({
               onChange={val =>
                 updateLineStyle('line1Style', {letterSpacing: val / 100})
               }
+              onSlidingStart={() => setIsSliding(true)}
+              onSlidingComplete={() => setIsSliding(false)}
             />
           </InfoLineStyleCard>
 
@@ -199,7 +211,8 @@ export default function InfoPanel({
             onFontSizeChange={val =>
               updateLineStyle('line2Style', {fontSize: val})
             }
-            maxFontSize={36}>
+            maxFontSize={36}
+            setIsSliding={setIsSliding}>
             <Slider
               label="不透明度"
               value={Math.round(settings.line2Style.opacity * 100)}
@@ -209,6 +222,8 @@ export default function InfoPanel({
               onChange={val =>
                 updateLineStyle('line2Style', {opacity: val / 100})
               }
+              onSlidingStart={() => setIsSliding(true)}
+              onSlidingComplete={() => setIsSliding(false)}
               unit="%"
             />
           </InfoLineStyleCard>
@@ -279,7 +294,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -293,7 +308,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resetLabel: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.textSecondary,
     marginLeft: 6,
@@ -307,7 +322,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   toggleLabel: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -323,7 +338,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   helperText: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '500',
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -338,7 +353,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -353,6 +368,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     color: colors.textPrimary,
     backgroundColor: colors.surface,
-    fontSize: 12,
+    fontSize: fontSize.sm,
   },
 });

@@ -2,7 +2,7 @@ import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 
 import {EXPORT_FORMAT_OPTIONS, EXPORT_SCALE_OPTIONS} from '../../../config';
-import {colors} from '../../../theme';
+import {colors, fontSize} from '../../../theme';
 import {Slider} from '../../ui/Slider';
 import {SegmentedControl} from '../../ui/SegmentedControl';
 import type {FrameSettings} from '../../../types';
@@ -71,13 +71,15 @@ export default function ExportPanel({
       </TouchableOpacity>
 
       <View style={styles.hintBox}>
-        <Text style={styles.hintTitle}>导出说明</Text>
+        <Text style={styles.hintTitle}>导出建议</Text>
         <Text style={styles.hintText}>
           {settings.exportFormat === 'png'
-            ? 'PNG 格式无损导出，文件较大'
-            : `JPEG 质量 ${Math.round(settings.exportQuality * 100)}%`}
+            ? 'PNG: 无损导出，文件极大'
+            : 'JPEG: 兼容性最好，质量建议 80%-90%'}
         </Text>
-        <Text style={styles.hintText}>分辨率越高，图片越清晰，文件越大</Text>
+        <Text style={styles.hintText}>
+          3x 即可满足 4K 屏幕显示需求，且体积适中
+        </Text>
       </View>
     </View>
   );
@@ -100,7 +102,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: colors.white,
-    fontSize: 14,
+    fontSize: fontSize.base,
     fontWeight: '600',
   },
   hintBox: {
@@ -109,7 +111,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   hintTitle: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -117,7 +119,7 @@ const styles = StyleSheet.create({
   },
   hintText: {
     marginTop: 4,
-    fontSize: 10,
+    fontSize: fontSize.xs,
     color: colors.textMuted,
   },
   scaleHint: {
@@ -126,7 +128,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   scaleHintText: {
-    fontSize: 11,
+    fontSize: fontSize.xs,
     color: colors.textMuted,
     opacity: 0.8,
   },

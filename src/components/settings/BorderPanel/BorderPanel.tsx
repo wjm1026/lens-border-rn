@@ -1,9 +1,9 @@
 import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 
 import {BORDER_COLORS} from '../../../config';
-import {colors} from '../../../theme';
-import {Slider, ColorPicker} from '../../ui';
+import {colors, fontSize} from '../../../theme';
+import {Slider, ColorPicker, SwatchPicker} from '../../ui';
 import type {FrameSettings} from '../../../types';
 
 interface BorderPanelProps {
@@ -12,11 +12,13 @@ interface BorderPanelProps {
     key: K,
     value: FrameSettings[K],
   ) => void;
+  setIsSliding: (sliding: boolean) => void;
 }
 
 export default function BorderPanel({
   settings,
   updateSettings,
+  setIsSliding,
 }: BorderPanelProps) {
   const normalizedColor = settings.borderColor.toLowerCase();
 
@@ -29,6 +31,8 @@ export default function BorderPanel({
         max={100}
         step={1}
         onChange={val => updateSettings('borderRadius', val)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
         unit="px"
       />
 
@@ -42,6 +46,8 @@ export default function BorderPanel({
         max={100}
         step={1}
         onChange={val => updateSettings('shadowSize', val)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
         unit="px"
       />
       <Slider
@@ -51,6 +57,8 @@ export default function BorderPanel({
         max={100}
         step={1}
         onChange={val => updateSettings('shadowOpacity', val / 100)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
         unit="%"
       />
 
@@ -64,6 +72,8 @@ export default function BorderPanel({
         max={20}
         step={1}
         onChange={val => updateSettings('borderWidth', val)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
         unit="px"
       />
 
@@ -76,29 +86,29 @@ export default function BorderPanel({
           <ColorPicker
             color={settings.borderColor}
             onChange={color => updateSettings('borderColor', color)}
+            onSlidingStart={() => setIsSliding(true)}
+            onSlidingComplete={() => setIsSliding(false)}
             size={32}
           />
         </View>
       </View>
-      <View style={styles.swatchRow}>
-        {BORDER_COLORS.map(color => {
-          const isActive = normalizedColor === color.toLowerCase();
-          return (
-            <TouchableOpacity
-              key={color}
-              style={[
-                styles.swatch,
-                {backgroundColor: color},
-                isActive && styles.swatchActive,
-              ]}
-              onPress={() => updateSettings('borderColor', color)}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={`边框颜色 ${color}`}
-            />
-          );
-        })}
-      </View>
+      <SwatchPicker
+        items={BORDER_COLORS}
+        onSelect={color => updateSettings('borderColor', color)}
+        activeId={normalizedColor}
+        getId={color => color.toLowerCase()}
+        setIsSliding={setIsSliding}
+        containerStyle={styles.swatchRow}
+        renderItem={(color, isActive) => (
+          <View
+            style={[
+              styles.swatch,
+              {backgroundColor: color},
+              isActive && styles.swatchActive,
+            ]}
+          />
+        )}
+      />
     </View>
   );
 }
@@ -115,7 +125,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '700',
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -129,14 +139,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   colorLabel: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   colorValue: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',

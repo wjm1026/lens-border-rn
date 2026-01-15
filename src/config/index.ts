@@ -30,3 +30,9 @@ export {
   MIN_CROP_SIZE,
 } from './crop';
 export {IMAGE_PICKER_OPTIONS} from './imagePicker';
+export {
+  ANIMATION_DURATION,
+  SPRING_CONFIG,
+  LAYOUT_ANIMATION_CONFIG,
+  FLOATING_PANEL_ANIMATION,
+} from './animation';

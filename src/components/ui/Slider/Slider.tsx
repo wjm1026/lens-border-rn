@@ -7,7 +7,7 @@ import {
   LayoutChangeEvent,
 } from 'react-native';
 
-import {colors} from '../../../theme';
+import {colors, fontSize} from '../../../theme';
 
 interface SliderProps {
   label: string;
@@ -16,6 +16,8 @@ interface SliderProps {
   max: number;
   step?: number;
   onChange: (value: number) => void;
+  onSlidingStart?: () => void;
+  onSlidingComplete?: () => void;
   unit?: string;
 }
 
@@ -26,6 +28,8 @@ export default function Slider({
   max,
   step = 1,
   onChange,
+  onSlidingStart,
+  onSlidingComplete,
   unit = '',
 }: SliderProps) {
   const trackRef = useRef<View>(null);
@@ -103,12 +107,19 @@ export default function Slider({
               onChangeRef.current(calculateValue(pageX, {left, width}));
             }
           });
+          onSlidingStart?.();
         },
         onPanResponderMove: (_evt, gestureState) => {
           updateValue(gestureState.moveX);
         },
+        onPanResponderRelease: () => {
+          onSlidingComplete?.();
+        },
+        onPanResponderTerminate: () => {
+          onSlidingComplete?.();
+        },
       }),
-    [calculateValue, updateValue],
+    [calculateValue, updateValue, onSlidingStart, onSlidingComplete],
   );
 
   const percentage = ((value - min) / (max - min)) * 100;
@@ -127,16 +138,23 @@ export default function Slider({
         ref={trackRef}
         onLayout={handleLayout}
         {...panResponder.panHandlers}>
-        <View style={styles.track}>
-          <View style={[styles.fill, {width: `${percentage}%`}]} />
+        <View style={styles.trackBackground}>
+          <View style={styles.track}>
+            <View style={[styles.fill, {width: `${percentage}%`}]} />
+          </View>
         </View>
-        <View style={[styles.thumb, {left: `${percentage}%`}]} />
+        <View style={[styles.thumbContainer, {left: `${percentage}%`}]}>
+          <View style={styles.thumbOuter}>
+            <View style={styles.thumbInner} />
+          </View>
+        </View>
       </View>
     </View>
   );
 }
 
-const THUMB_SIZE = 20;
+const THUMB_SIZE = 22;
+const TRACK_HEIGHT = 6;
 
 const styles = StyleSheet.create({
   container: {
@@ -146,50 +164,67 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   label: {
-    fontSize: 12,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   valueText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: fontSize.xs,
+    fontWeight: '600',
     color: colors.textMuted,
     fontVariant: ['tabular-nums'],
   },
   trackContainer: {
-    height: 40,
+    height: 36,
     justifyContent: 'center',
     marginHorizontal: THUMB_SIZE / 2,
   },
+  trackBackground: {
+    borderRadius: TRACK_HEIGHT / 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    padding: 1,
+  },
   track: {
-    height: 4,
-    backgroundColor: colors.border,
-    borderRadius: 2,
+    height: TRACK_HEIGHT,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: TRACK_HEIGHT / 2,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
     backgroundColor: colors.accent,
-    borderRadius: 2,
+    borderRadius: TRACK_HEIGHT / 2,
   },
-  thumb: {
+  thumbContainer: {
     position: 'absolute',
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    marginLeft: -THUMB_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbOuter: {
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: THUMB_SIZE / 2,
     backgroundColor: colors.white,
-    borderWidth: 3,
-    borderColor: colors.accent,
-    marginLeft: -THUMB_SIZE / 2,
-    shadowColor: colors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.accent,
     shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  thumbInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accent,
   },
 });

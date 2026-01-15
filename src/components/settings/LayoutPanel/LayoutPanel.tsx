@@ -12,11 +12,13 @@ interface LayoutPanelProps {
     key: K,
     value: FrameSettings[K],
   ) => void;
+  setIsSliding: (sliding: boolean) => void;
 }
 
 export default function LayoutPanel({
   settings,
   updateSettings,
+  setIsSliding,
 }: LayoutPanelProps) {
   return (
     <View style={styles.container}>
@@ -27,6 +29,8 @@ export default function LayoutPanel({
         max={200}
         step={1}
         onChange={val => updateSettings('padding', val)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
         unit="px"
       />
 
@@ -35,6 +39,8 @@ export default function LayoutPanel({
         options={ASPECT_RATIO_OPTIONS}
         value={settings.aspectRatio}
         onChange={val => updateSettings('aspectRatio', val)}
+        onSlidingStart={() => setIsSliding(true)}
+        onSlidingComplete={() => setIsSliding(false)}
       />
     </View>
   );

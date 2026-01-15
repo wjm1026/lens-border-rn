@@ -27,6 +27,8 @@ interface SharedPreviewProps {
   exifPadding?: number;
   infoBaseBottom?: number;
   onImageLoad?: () => void;
+  onBgLoad?: () => void;
+  disableBackgroundAnimation?: boolean;
 }
 
 export const SharedPreview = React.memo(
@@ -43,6 +45,8 @@ export const SharedPreview = React.memo(
     exifPadding = PREVIEW_EXIF_PADDING,
     infoBaseBottom = PREVIEW_INFO_BASE_BOTTOM,
     onImageLoad,
+    onBgLoad,
+    disableBackgroundAnimation,
   }: SharedPreviewProps) => {
     const imageShadowStyle = useMemo(() => {
       const shadowSize = Math.max(0, settings.shadowSize);
@@ -129,7 +133,12 @@ export const SharedPreview = React.memo(
 
     return (
       <View style={frameStyle} collapsable={false}>
-        <BackgroundLayer settings={settings} imageUri={imageUri} />
+        <BackgroundLayer
+          settings={settings}
+          imageUri={imageUri}
+          onImageLoad={onBgLoad}
+          disableAnimation={disableBackgroundAnimation}
+        />
         <View
           style={[styles.imageViewportOuter, imageShadowStyle, viewportStyle]}>
           <View style={[styles.imageViewport, imageBorderStyle]}>

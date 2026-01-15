@@ -7,11 +7,9 @@ import {
   RotateCw,
 } from 'lucide-react-native';
 
-import {colors} from '../../../theme';
+import {colors, fontSize} from '../../../theme';
 import {Slider} from '../../ui/Slider';
-import {
-  SegmentedControl,
-} from '../../ui/SegmentedControl';
+import {SegmentedControl} from '../../ui/SegmentedControl';
 import {CROP_ASPECT_OPTIONS} from '../../../config';
 
 import type {CropAspectId, CropFlip} from '../../../types';
@@ -59,14 +57,18 @@ export default function CropPanel({
       <View style={styles.rotateRow}>
         <TouchableOpacity
           style={[styles.actionButton, styles.actionButtonLeft]}
-          onPress={() => onRotateStep(-90)}
+          onPressIn={() => {
+            onRotateStep(-90);
+          }}
           activeOpacity={0.7}>
           <RotateCcw color={colors.textSecondary} size={16} />
           <Text style={styles.actionLabel}>左转 90°</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => onRotateStep(90)}
+          onPressIn={() => {
+            onRotateStep(90);
+          }}
           activeOpacity={0.7}>
           <RotateCw color={colors.textSecondary} size={16} />
           <Text style={styles.actionLabel}>右转 90°</Text>
@@ -80,12 +82,12 @@ export default function CropPanel({
             styles.flipButtonLeft,
             flip.horizontal && styles.flipButtonActive,
           ]}
-          onPress={() =>
+          onPressIn={() => {
             onFlipChange({
               horizontal: !flip.horizontal,
               vertical: flip.vertical,
-            })
-          }
+            });
+          }}
           activeOpacity={0.7}>
           <FlipHorizontal
             color={flip.horizontal ? colors.textPrimary : colors.textSecondary}
@@ -101,12 +103,12 @@ export default function CropPanel({
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.flipButton, flip.vertical && styles.flipButtonActive]}
-          onPress={() =>
+          onPressIn={() => {
             onFlipChange({
               horizontal: flip.horizontal,
               vertical: !flip.vertical,
-            })
-          }
+            });
+          }}
           activeOpacity={0.7}>
           <FlipVertical
             color={flip.vertical ? colors.textPrimary : colors.textSecondary}
@@ -148,7 +150,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   actionLabel: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -178,7 +180,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
   },
   flipLabel: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -190,7 +192,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     textAlign: 'center',
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
