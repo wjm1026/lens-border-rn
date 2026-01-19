@@ -1,3 +1,15 @@
+/**
+ * usePreviewAspectRatio Hook
+ *
+ * 计算预览区域的宽高比，支持多种布局模式：
+ * - original: 保持原图/裁切后的宽高比
+ * - square: 1:1 正方形
+ * - portrait: 3:4 竖向
+ * - landscape: 4:3 横向
+ *
+ * 切换布局时会自动触发 LayoutAnimation 动画
+ */
+
 import {useMemo, useRef} from 'react';
 import {LayoutAnimation, Platform, UIManager} from 'react-native';
 

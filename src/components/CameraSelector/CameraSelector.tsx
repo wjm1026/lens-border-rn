@@ -1,9 +1,13 @@
+/**
+ * CameraSelector 组件
+ * 相机型号选择器，支持搜索和品牌分组展示
+ */
+
 import React, {useCallback} from 'react';
 import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -14,18 +18,30 @@ import {Camera, ChevronDown, Search, Sparkles} from 'lucide-react-native';
 import {useCameraSelectorState} from '../../hooks/useCameraSelectorState';
 import {useMenuPosition} from '../../hooks/useMenuPosition';
 import {CAMERA_SELECTOR_MENU_MAX_HEIGHT} from '../../config';
-import {colors, fontSize} from '../../theme';
-import {
-  getBrandByPresetId,
-  type CameraBrand,
-  type CameraPreset,
-} from '../../data/cameraPresets';
+import {colors} from '../../theme';
+import {getBrandByPresetId, type CameraPreset} from '../../data';
+import BrandGroup from './BrandGroup';
+import {cameraSelectorStyles as styles} from './styles';
+
+// ========== 类型定义 ==========
 
 interface CameraSelectorProps {
   onSelect: (preset: CameraPreset | null) => void;
   selectedId?: string | null;
   currentExifCamera?: string;
 }
+
+// ========== 辅助函数 ==========
+
+/**
+ * 获取 Logo 组件（处理 require 返回值）
+ */
+const getLogoComponent = (logoSource: any) => {
+  if (!logoSource) {return null;}
+  return logoSource?.default || logoSource;
+};
+
+// ========== 主组件 ==========
 
 export default function CameraSelector({
   onSelect,
@@ -42,11 +58,14 @@ export default function CameraSelector({
     hasSearchQuery,
     resetSearch,
   } = useCameraSelectorState({selectedId});
+
   const {isOpen, menuPosition, openMenu, closeMenu, triggerRef} =
     useMenuPosition({
       maxHeight: CAMERA_SELECTOR_MENU_MAX_HEIGHT,
       onClose: resetSearch,
     });
+
+  // ========== 事件处理 ==========
 
   const handleSelect = useCallback(
     (preset: CameraPreset) => {
@@ -61,17 +80,23 @@ export default function CameraSelector({
     closeMenu();
   }, [closeMenu, onSelect]);
 
+  // ========== 渲染数据 ==========
+
   const isPresetSelected = Boolean(selectedPreset);
   const displayText =
     selectedPreset?.displayName || currentExifCamera || '选择相机型号';
 
-  // Get the brand logo for the trigger button
-  const selectedBrand = selectedPreset?.id ? getBrandByPresetId(selectedPreset.id) : null;
-  const logoSource = selectedBrand?.logoWhite;
-  const LogoComponent = logoSource?.default || logoSource;
+  // 获取选中品牌的 Logo
+  const selectedBrand = selectedPreset?.id
+    ? getBrandByPresetId(selectedPreset.id)
+    : null;
+  const LogoComponent = getLogoComponent(selectedBrand?.logoWhite);
+
+  // ========== 渲染 ==========
 
   return (
     <View>
+      {/* 触发按钮 */}
       <View ref={triggerRef} collapsable={false}>
         <TouchableOpacity
           style={[styles.triggerButton, isOpen && styles.triggerButtonActive]}
@@ -79,9 +104,15 @@ export default function CameraSelector({
           activeOpacity={0.8}
           accessibilityRole="button"
           accessibilityLabel="选择相机型号">
-          {isPresetSelected && LogoComponent && typeof LogoComponent !== 'number' ? (
+          {isPresetSelected &&
+          LogoComponent &&
+          typeof LogoComponent !== 'number' ? (
             <View style={styles.triggerLogoContainer}>
-               <LogoComponent height={18} width={50} preserveAspectRatio="xMinYMid meet" />
+              <LogoComponent
+                height={18}
+                width={50}
+                preserveAspectRatio="xMinYMid meet"
+              />
             </View>
           ) : (
             <Camera size={16} color="rgba(255,255,255,0.6)" />
@@ -107,6 +138,7 @@ export default function CameraSelector({
         </TouchableOpacity>
       </View>
 
+      {/* 选择器模态框 */}
       <Modal
         visible={isOpen}
         transparent
@@ -124,6 +156,7 @@ export default function CameraSelector({
               },
             ]}
             onPress={e => e.stopPropagation()}>
+            {/* 搜索框 */}
             <View style={styles.searchContainer}>
               <Search size={16} color="rgba(255,255,255,0.4)" />
               <TextInput
@@ -138,12 +171,14 @@ export default function CameraSelector({
               />
             </View>
 
+            {/* 品牌列表 */}
             <ScrollView
               style={styles.menuScroll}
               contentContainerStyle={styles.menuContent}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled">
-              {currentExifCamera ? (
+              {/* 原始 EXIF 选项 */}
+              {currentExifCamera && (
                 <View style={styles.exifSection}>
                   <TouchableOpacity
                     style={[
@@ -162,8 +197,9 @@ export default function CameraSelector({
                     {!isPresetSelected && <View style={styles.exifDot} />}
                   </TouchableOpacity>
                 </View>
-              ) : null}
+              )}
 
+              {/* 品牌分组 */}
               {filteredBrands.map(brand => (
                 <BrandGroup
                   key={brand.id}
@@ -175,6 +211,7 @@ export default function CameraSelector({
                 />
               ))}
 
+              {/* 空状态 */}
               {filteredBrands.length === 0 && (
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyText}>未找到匹配的相机</Text>
@@ -187,265 +224,3 @@ export default function CameraSelector({
     </View>
   );
 }
-
-interface BrandGroupProps {
-  brand: CameraBrand;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onSelect: (preset: CameraPreset) => void;
-  selectedId?: string | null;
-}
-
-function BrandGroup({
-  brand,
-  isExpanded,
-  onToggle,
-  onSelect,
-  selectedId,
-}: BrandGroupProps) {
-  const hasSelected = brand.models.some(model => model.id === selectedId);
-
-  // Get the logo component - handle both direct component and require object
-  const logoSource = brand.logoWhite;
-  const LogoComponent = logoSource?.default || logoSource;
-
-  return (
-    <View style={styles.brandGroup}>
-      <TouchableOpacity
-        style={[styles.brandHeader, hasSelected && styles.brandHeaderActive]}
-        onPress={onToggle}
-        activeOpacity={0.8}>
-        {LogoComponent && typeof LogoComponent !== 'number' ? (
-          <View style={styles.brandLogoContainer}>
-            <LogoComponent width={20} height={20} />
-          </View>
-        ) : (
-          <View style={styles.brandLogoPlaceholder} />
-        )}
-        <Text style={styles.brandName}>{brand.name}</Text>
-        <Text style={styles.brandCount}>({brand.models.length})</Text>
-        <View style={styles.flexSpacer} />
-        {hasSelected && <View style={styles.selectedDot} />}
-        <ChevronDown
-          size={16}
-          color="rgba(255,255,255,0.35)"
-          style={isExpanded ? styles.chevronOpen : undefined}
-        />
-      </TouchableOpacity>
-
-      {isExpanded && (
-        <View style={styles.modelsContainer}>
-          {brand.models.map(model => {
-            const isActive = model.id === selectedId;
-            return (
-              <TouchableOpacity
-                key={model.id}
-                style={[styles.modelRow, isActive && styles.modelRowActive]}
-                onPress={() => onSelect(model)}
-                activeOpacity={0.8}>
-                <Text style={styles.modelText} numberOfLines={1}>
-                  {model.displayName}
-                </Text>
-                {isActive && <View style={styles.selectedDot} />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  triggerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  triggerButtonActive: {
-    borderColor: 'rgba(255,255,255,0.25)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  triggerLogoContainer: {
-    marginRight: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  triggerText: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.5)',
-  },
-  triggerTextActive: {
-    color: colors.textPrimary,
-  },
-  presetBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    backgroundColor: 'rgba(59,130,246,0.25)',
-    marginRight: 6,
-  },
-  presetBadgeText: {
-    fontSize: fontSize.xs,
-    fontWeight: '600',
-    color: colors.accent,
-  },
-  chevronOpen: {
-    transform: [{rotate: '180deg'}],
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  menuContainer: {
-    position: 'absolute',
-    backgroundColor: 'rgba(17,17,17,0.96)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 12},
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    elevation: 12,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    color: colors.textPrimary,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    fontSize: fontSize.sm,
-  },
-  menuScroll: {
-    flex: 1,
-  },
-  menuContent: {
-    paddingBottom: 8,
-  },
-  exifSection: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  exifButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 10,
-  },
-  exifButtonActive: {
-    backgroundColor: 'rgba(59,130,246,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.4)',
-  },
-  exifTextBlock: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  exifTitle: {
-    fontSize: fontSize.sm,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  exifSubtitle: {
-    fontSize: fontSize.xs,
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 2,
-  },
-  exifDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.accent,
-  },
-  brandGroup: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  brandHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  brandHeaderActive: {
-    backgroundColor: 'rgba(59,130,246,0.15)',
-  },
-  brandName: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginLeft: 8,
-  },
-  brandLogoContainer: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  brandLogoPlaceholder: {
-    width: 24,
-    height: 24,
-  },
-  brandCount: {
-    fontSize: fontSize.xs,
-    color: 'rgba(255,255,255,0.35)',
-    marginLeft: 6,
-  },
-  flexSpacer: {
-    flex: 1,
-  },
-  selectedDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.accent,
-    marginRight: 6,
-  },
-  modelsContainer: {
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  modelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-  },
-  modelRowActive: {
-    backgroundColor: 'rgba(59,130,246,0.2)',
-  },
-  modelText: {
-    flex: 1,
-    fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.75)',
-  },
-  emptyState: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.4)',
-  },
-});
