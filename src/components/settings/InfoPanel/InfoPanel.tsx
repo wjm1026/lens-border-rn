@@ -108,6 +108,14 @@ export default function InfoPanel({
         />
       </View>
 
+      <View style={styles.toggleRow}>
+        <Text style={styles.toggleLabel}>显示品牌 Logo</Text>
+        <AnimatedSwitch
+          value={settings.showBrandLogo}
+          onValueChange={val => updateSettings('showBrandLogo', val)}
+        />
+      </View>
+
       <SegmentedControl<FrameSettings['infoLayout']>
         label="显示布局"
         options={INFO_LAYOUT_OPTIONS}

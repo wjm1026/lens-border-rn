@@ -75,11 +75,11 @@ export const SharedPreview = React.memo(
         styles.imageFrame,
         {
           padding: framePadding,
-          paddingBottom: framePadding + (settings.showExif ? exifPadding : 0),
+          paddingBottom: settings.showExif ? settings.infoPadding : framePadding,
           width: viewportSize.width + framePadding * 2,
         },
       ],
-      [framePadding, settings.showExif, viewportSize.width, exifPadding],
+      [framePadding, settings.showExif, viewportSize.width, settings.infoPadding],
     );
 
     const viewportStyle = useMemo(

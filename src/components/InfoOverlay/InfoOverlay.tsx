@@ -10,6 +10,7 @@ import {
 import type {FrameSettings} from '../../types';
 import {DEFAULT_EXIF_INFO} from '../../config';
 import EditableText from './EditableText';
+import {getBrandByPresetId} from '../../data/cameraPresets';
 
 interface InfoOverlayProps {
   settings: FrameSettings;
@@ -114,9 +115,12 @@ export default function InfoOverlay({
 
   const containerStyle = useMemo(
     () => ({
-      left: framePadding,
-      right: framePadding,
-      bottom: baseBottom,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: settings.infoPadding,
+      paddingHorizontal: framePadding,
+      justifyContent: 'center' as const,
       transform: [
         {translateX: settings.infoOffset.x},
         {translateY: settings.infoOffset.y},
@@ -125,8 +129,8 @@ export default function InfoOverlay({
     }),
     [
       alignItems,
-      baseBottom,
       framePadding,
+      settings.infoPadding,
       settings.infoOffset.x,
       settings.infoOffset.y,
     ],
@@ -139,6 +143,18 @@ export default function InfoOverlay({
     onCustomExifChange?.(key, value);
   };
 
+  // 获取品牌Logo
+  const brand = settings.selectedCameraPresetId
+    ? getBrandByPresetId(settings.selectedCameraPresetId)
+    : undefined;
+  const logoSource = brand?.logoWhite;
+  const LogoComponent = logoSource?.default || logoSource;
+  const showLogo = settings.showBrandLogo && LogoComponent && typeof LogoComponent !== 'number';
+
+  // Logo尺寸基于字体大小，使用更合理的高度和宽度比例
+  const logoHeight = settings.line1Style.fontSize * 1.1;
+  const logoWidth = logoHeight * 3.5; // 给横向Logo留足空间
+
   if (!settings.showExif) {
     return null;
   }
@@ -148,14 +164,25 @@ export default function InfoOverlay({
       style={[styles.container, containerStyle]}
       {...panResponder.panHandlers}>
       {settings.infoLayout === 'centered' ? (
-        <View style={[styles.centeredBlock, {padding: settings.infoPadding}]}>
-          <EditableText
-            value={modelValue}
-            placeholder={modelPlaceholder}
-            onChange={val => handleExifChange('model', val)}
-            style={line1Style}
-            textAlign="center"
-          />
+        <View style={styles.centeredBlock}>
+          <View style={styles.modelRow}>
+            {showLogo && (
+              <View style={[styles.logoContainer, {marginRight: 12}]}>
+                <LogoComponent 
+                  height={logoHeight} 
+                  width={logoWidth} 
+                  preserveAspectRatio="xMidYMid meet" 
+                />
+              </View>
+            )}
+            <EditableText
+              value={modelValue}
+              placeholder={modelPlaceholder}
+              onChange={val => handleExifChange('model', val)}
+              style={line1Style}
+              textAlign="center"
+            />
+          </View>
           <View style={{marginTop: settings.infoGap}}>
             <EditableText
               value={paramsValue}
@@ -167,15 +194,26 @@ export default function InfoOverlay({
           </View>
         </View>
       ) : (
-        <View style={[styles.classicRow, {padding: settings.infoPadding}]}>
+        <View style={styles.classicRow}>
           <View style={styles.classicColumn}>
-            <EditableText
-              value={modelValue}
-              placeholder={modelPlaceholder}
-              onChange={val => handleExifChange('model', val)}
-              style={[styles.modelText, line1Style]}
-              textAlign="left"
-            />
+            <View style={styles.modelRow}>
+              {showLogo && (
+                <View style={[styles.logoContainer, {marginRight: 10}]}>
+                  <LogoComponent 
+                    height={logoHeight} 
+                    width={logoWidth} 
+                    preserveAspectRatio="xMinYMid meet" 
+                  />
+                </View>
+              )}
+              <EditableText
+                value={modelValue}
+                placeholder={modelPlaceholder}
+                onChange={val => handleExifChange('model', val)}
+                style={[styles.modelText, line1Style]}
+                textAlign="left"
+              />
+            </View>
             <View style={styles.marginTopSmall}>
               <EditableText
                 value={lensValue}
@@ -215,6 +253,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   centeredBlock: {
+    alignItems: 'center',
+  },
+  modelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  logoContainer: {
+    justifyContent: 'center',
     alignItems: 'center',
   },
   classicRow: {

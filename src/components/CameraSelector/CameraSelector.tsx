@@ -190,12 +190,23 @@ function BrandGroup({
 }: BrandGroupProps) {
   const hasSelected = brand.models.some(model => model.id === selectedId);
 
+  // Get the logo component - handle both direct component and require object
+  const logoSource = brand.logoWhite;
+  const LogoComponent = logoSource?.default || logoSource;
+
   return (
     <View style={styles.brandGroup}>
       <TouchableOpacity
         style={[styles.brandHeader, hasSelected && styles.brandHeaderActive]}
         onPress={onToggle}
         activeOpacity={0.8}>
+        {LogoComponent && typeof LogoComponent !== 'number' ? (
+          <View style={styles.brandLogoContainer}>
+            <LogoComponent width={20} height={20} />
+          </View>
+        ) : (
+          <View style={styles.brandLogoPlaceholder} />
+        )}
         <Text style={styles.brandName}>{brand.name}</Text>
         <Text style={styles.brandCount}>({brand.models.length})</Text>
         <View style={styles.flexSpacer} />
@@ -365,6 +376,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: '600',
     color: colors.textPrimary,
+    marginLeft: 8,
+  },
+  brandLogoContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  brandLogoPlaceholder: {
+    width: 24,
+    height: 24,
   },
   brandCount: {
     fontSize: fontSize.xs,

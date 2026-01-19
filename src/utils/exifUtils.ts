@@ -75,10 +75,10 @@ export const buildExifParams = (
   }
   const parts: string[] = [];
   if (exif.FNumber) {
-    parts.push(`f/${exif.FNumber}`);
+    parts.push(`F${exif.FNumber}`);
   }
   if (exif.ExposureTime) {
-    parts.push(exif.ExposureTime);
+    parts.push(`${exif.ExposureTime}s`);
   }
   if (exif.ISO !== undefined && exif.ISO !== null) {
     const isoValue = String(exif.ISO).trim();

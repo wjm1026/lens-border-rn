@@ -45,6 +45,7 @@ export interface FrameSettings {
 
   // 信息
   showExif: boolean;
+  showBrandLogo: boolean;
   textColor: string;
   infoPosition: 'bottom' | 'side' | 'overlay';
   infoLayout: 'classic' | 'centered';

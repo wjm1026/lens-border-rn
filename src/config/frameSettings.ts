@@ -16,10 +16,11 @@ export const DEFAULT_SETTINGS: FrameSettings = {
   backgroundBrightness: 100,
   blurAmount: 26,
   showExif: true,
+  showBrandLogo: true,
   textColor: '#ffffff',
   infoPosition: 'bottom',
   infoLayout: 'centered',
-  infoPadding: 0,
+  infoPadding: 60,
   infoGap: 4,
   infoOffset: {x: 0, y: 0},
   line1Style: {
