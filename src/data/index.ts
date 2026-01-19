@@ -109,12 +109,40 @@ export const getBrandById = (brandId: BrandId): CameraBrand | undefined => {
   return CAMERA_BRANDS.find(brand => brand.id === brandId);
 };
 
-/**
- * 根据品牌 ID 获取 Logo
- */
 export const getBrandLogo = (
   brandId: BrandId,
   variant: 'white' | 'black' | 'color' = 'white',
 ): any => {
   return BRAND_LOGOS[brandId]?.[variant];
+};
+
+/**
+ * 根据 EXIF 信息匹配相机预设
+ * @param exifModel EXIF 中的 Model 字段（如 "NIKON D800E"）
+ * @returns 匹配到的预设，如果没有匹配则返回 undefined
+ */
+export const matchPresetByExif = (exifModel?: string): CameraPreset | undefined => {
+  if (!exifModel) {
+    return undefined;
+  }
+
+  const normalizedExif = exifModel.toLowerCase().replace(/\s+/g, '');
+
+  // 遍历所有预设，寻找匹配
+  for (const preset of getAllCameraPresets()) {
+    const normalizedPresetModel = preset.model.toLowerCase().replace(/\s+/g, '');
+    const normalizedPresetBrandModel = `${preset.brand}${preset.model}`.toLowerCase().replace(/\s+/g, '');
+
+    // 精确匹配或包含匹配
+    if (
+      normalizedExif === normalizedPresetModel ||
+      normalizedExif === normalizedPresetBrandModel ||
+      normalizedExif.includes(normalizedPresetModel) ||
+      normalizedPresetModel.includes(normalizedExif)
+    ) {
+      return preset;
+    }
+  }
+
+  return undefined;
 };

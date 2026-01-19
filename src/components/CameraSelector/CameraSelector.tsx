@@ -83,14 +83,24 @@ export default function CameraSelector({
   // ========== 渲染数据 ==========
 
   const isPresetSelected = Boolean(selectedPreset);
-  const displayText =
-    selectedPreset?.displayName || currentExifCamera || '选择相机型号';
 
   // 获取选中品牌的 Logo
   const selectedBrand = selectedPreset?.id
     ? getBrandByPresetId(selectedPreset.id)
     : null;
   const LogoComponent = getLogoComponent(selectedBrand?.logoWhite);
+  const hasLogo = LogoComponent && typeof LogoComponent !== 'number';
+
+  // 当有 Logo 时只显示型号（如 "Z9"），否则显示完整名称（如 "Nikon Z9"）
+  const displayText = (() => {
+    if (!selectedPreset) {
+      return currentExifCamera || '选择相机型号';
+    }
+    if (hasLogo) {
+      return selectedPreset.modelOnly;
+    }
+    return selectedPreset.displayName;
+  })();
 
   // ========== 渲染 ==========
 
@@ -104,9 +114,7 @@ export default function CameraSelector({
           activeOpacity={0.8}
           accessibilityRole="button"
           accessibilityLabel="选择相机型号">
-          {isPresetSelected &&
-          LogoComponent &&
-          typeof LogoComponent !== 'number' ? (
+          {isPresetSelected && hasLogo ? (
             <View style={styles.triggerLogoContainer}>
               <LogoComponent
                 height={18}

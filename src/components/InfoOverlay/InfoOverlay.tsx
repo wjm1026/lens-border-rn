@@ -10,7 +10,7 @@ import {
 import type {FrameSettings} from '../../types';
 import {DEFAULT_EXIF_INFO} from '../../config';
 import EditableText from './EditableText';
-import {getBrandByPresetId} from '../../data/cameraPresets';
+import {getBrandByPresetId, getCameraPresetById} from '../../data/cameraPresets';
 
 interface InfoOverlayProps {
   settings: FrameSettings;
@@ -57,13 +57,11 @@ export default function InfoOverlay({
   );
 
   // 用于编辑的值（显示当前自定义值或使用占位符）
-  const modelValue = settings.customExif.model ?? '';
   const lensValue = settings.customExif.lens ?? '';
   const paramsValue = settings.customExif.params ?? '';
   const dateValue = settings.customExif.date ?? '';
 
   // 用于显示的默认值
-  const modelPlaceholder = DEFAULT_EXIF_INFO.model;
   const lensPlaceholder = DEFAULT_EXIF_INFO.lens;
   const paramsPlaceholder = DEFAULT_EXIF_INFO.params;
   const datePlaceholder = DEFAULT_EXIF_INFO.date;
@@ -141,13 +139,37 @@ export default function InfoOverlay({
     onCustomExifChange?.(key, value);
   };
 
-  // 获取品牌Logo
+  // 获取品牌Logo和相机预设信息
   const brand = settings.selectedCameraPresetId
     ? getBrandByPresetId(settings.selectedCameraPresetId)
+    : undefined;
+  const cameraPreset = settings.selectedCameraPresetId
+    ? getCameraPresetById(settings.selectedCameraPresetId)
     : undefined;
   const logoSource = brand?.logoWhite;
   const LogoComponent = logoSource?.default || logoSource;
   const showLogo = settings.showBrandLogo && LogoComponent && typeof LogoComponent !== 'number';
+
+  // 根据是否显示 Logo 来决定型号名称
+  // 有 Logo 时只显示型号（如 "Z8"），没有 Logo 时显示完整名称（如 "NIKON Z8"）
+  const modelPlaceholderWithLogo = cameraPreset?.modelOnly ?? DEFAULT_EXIF_INFO.model;
+  const modelPlaceholderWithoutLogo = cameraPreset?.displayName ?? DEFAULT_EXIF_INFO.model;
+  const actualModelPlaceholder = showLogo ? modelPlaceholderWithLogo : modelPlaceholderWithoutLogo;
+
+  // 计算实际显示的型号值
+  // 如果有 Logo 且当前是预设型号（用户没有手动修改），则显示 modelOnly
+  const actualModelValue = (() => {
+    // 如果没有 customExif.model，使用空字符串（会显示 placeholder）
+    if (!settings.customExif.model) {
+      return '';
+    }
+    // 如果显示 Logo 且有相机预设，使用 modelOnly
+    if (showLogo && cameraPreset) {
+      return cameraPreset.modelOnly;
+    }
+    // 其他情况使用原始的 customExif.model
+    return settings.customExif.model;
+  })();
 
   // Logo尺寸基于字体大小，使用更合理的高度和宽度比例
   const logoHeight = settings.line1Style.fontSize * 1.1;
@@ -174,8 +196,8 @@ export default function InfoOverlay({
               </View>
             )}
             <EditableText
-              value={modelValue}
-              placeholder={modelPlaceholder}
+              value={actualModelValue}
+              placeholder={actualModelPlaceholder}
               onChange={val => handleExifChange('model', val)}
               style={line1Style}
               textAlign="center"
@@ -205,8 +227,8 @@ export default function InfoOverlay({
                 </View>
               )}
               <EditableText
-                value={modelValue}
-                placeholder={modelPlaceholder}
+                value={actualModelValue}
+                placeholder={actualModelPlaceholder}
                 onChange={val => handleExifChange('model', val)}
                 style={[styles.modelText, line1Style]}
                 textAlign="left"
