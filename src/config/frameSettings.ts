@@ -24,14 +24,12 @@ export const DEFAULT_SETTINGS: FrameSettings = {
   infoGap: 4,
   infoOffset: {x: 0, y: 0},
   line1Style: {
-    fontId: 'Inter',
     fontSize: 18,
     fontWeight: 700,
     letterSpacing: 0.05,
     opacity: 1,
   },
   line2Style: {
-    fontId: 'Inter',
     fontSize: 14,
     fontWeight: 400,
     letterSpacing: 0.02,

@@ -3,12 +3,9 @@ import {StyleSheet, Text, View} from 'react-native';
 
 import {colors, fontSize as fontSizeTheme} from '../../../theme';
 import {Slider} from '../../ui';
-import FontPicker from './FontPicker';
 
 interface InfoLineStyleCardProps {
   title: string;
-  fontId: string;
-  onFontIdChange: (id: string) => void;
   fontSize: number;
   onFontSizeChange: (size: number) => void;
   maxFontSize: number;
@@ -18,8 +15,6 @@ interface InfoLineStyleCardProps {
 
 export default function InfoLineStyleCard({
   title,
-  fontId,
-  onFontIdChange,
   fontSize,
   onFontSizeChange,
   maxFontSize,
@@ -29,11 +24,6 @@ export default function InfoLineStyleCard({
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{title}</Text>
-
-      <View style={styles.field}>
-        <Text style={styles.label}>字体</Text>
-        <FontPicker value={fontId} onChange={onFontIdChange} />
-      </View>
 
       <Slider
         label="字号"

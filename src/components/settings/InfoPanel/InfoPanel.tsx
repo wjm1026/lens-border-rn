@@ -147,8 +147,6 @@ export default function InfoPanel({
             {/* 第一行样式 */}
             <InfoLineStyleCard
               title="第一行: 相机型号"
-              fontId={settings.line1Style.fontId}
-              onFontIdChange={fontId => updateLineStyle('line1Style', {fontId})}
               fontSize={settings.line1Style.fontSize}
               onFontSizeChange={val =>
                 updateLineStyle('line1Style', {fontSize: val})
@@ -183,8 +181,6 @@ export default function InfoPanel({
             {/* 第二行样式 */}
             <InfoLineStyleCard
               title="第二行: 拍摄参数"
-              fontId={settings.line2Style.fontId}
-              onFontIdChange={fontId => updateLineStyle('line2Style', {fontId})}
               fontSize={settings.line2Style.fontSize}
               onFontSizeChange={val =>
                 updateLineStyle('line2Style', {fontSize: val})

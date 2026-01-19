@@ -74,10 +74,8 @@ export default function InfoOverlay({
       letterSpacing:
         settings.line1Style.letterSpacing * settings.line1Style.fontSize,
       opacity: settings.line1Style.opacity,
-      fontFamily: settings.line1Style.fontId,
     }),
     [
-      settings.line1Style.fontId,
       settings.line1Style.fontSize,
       settings.line1Style.fontWeight,
       settings.line1Style.letterSpacing,
@@ -94,10 +92,8 @@ export default function InfoOverlay({
       letterSpacing:
         settings.line2Style.letterSpacing * settings.line2Style.fontSize,
       opacity: settings.line2Style.opacity,
-      fontFamily: settings.line2Style.fontId,
     }),
     [
-      settings.line2Style.fontId,
       settings.line2Style.fontSize,
       settings.line2Style.fontWeight,
       settings.line2Style.letterSpacing,
@@ -171,9 +167,13 @@ export default function InfoOverlay({
     return settings.customExif.model;
   })();
 
-  // Logo尺寸基于字体大小，使用更合理的高度和宽度比例
+  // Logo尺寸基于字体大小
   const logoHeight = settings.line1Style.fontSize * 1.1;
-  const logoWidth = logoHeight * 3.5; // 给横向Logo留足空间
+  
+  // 针对特定品牌设置更合适的宽度比例
+  // 徕卡(Leica)、苹果(Apple)、华为(Huawei)等 Logo 趋向于正方形
+  const isSquareLogo = brand?.id && ['leica', 'apple', 'huawei', 'xiaomi'].includes(brand.id);
+  const logoWidth = logoHeight * (isSquareLogo ? 1.2 : 3.5);
 
   if (!settings.showExif) {
     return null;
@@ -191,7 +191,7 @@ export default function InfoOverlay({
                 <LogoComponent
                   height={logoHeight}
                   width={logoWidth}
-                  preserveAspectRatio="xMidYMid meet"
+                  preserveAspectRatio="xMaxYMid meet"
                 />
               </View>
             )}
@@ -222,7 +222,7 @@ export default function InfoOverlay({
                   <LogoComponent
                     height={logoHeight}
                     width={logoWidth}
-                    preserveAspectRatio="xMinYMid meet"
+                    preserveAspectRatio="xMaxYMid meet"
                   />
                 </View>
               )}

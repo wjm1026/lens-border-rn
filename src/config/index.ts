@@ -1,5 +1,4 @@
 export {DEFAULT_SETTINGS} from './frameSettings';
-export {FONT_OPTIONS} from './fonts';
 export {DEFAULT_EXIF_INFO} from './exif';
 export {CAMERA_SELECTOR_MENU_MAX_HEIGHT} from './cameraSelector';
 export {DEFAULT_EDITOR_TAB} from './editor';

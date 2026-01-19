@@ -1,5 +1,4 @@
 export interface LineStyle {
-  fontId: string;
   fontSize: number;
   fontWeight: number;
   letterSpacing: number;

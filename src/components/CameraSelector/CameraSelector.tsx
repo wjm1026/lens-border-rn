@@ -118,8 +118,8 @@ export default function CameraSelector({
             <View style={styles.triggerLogoContainer}>
               <LogoComponent
                 height={18}
-                width={50}
-                preserveAspectRatio="xMinYMid meet"
+                width={selectedBrand?.id && ['leica', 'apple', 'huawei', 'xiaomi'].includes(selectedBrand.id) ? 22 : 50}
+                preserveAspectRatio="xMaxYMid meet"
               />
             </View>
           ) : (
