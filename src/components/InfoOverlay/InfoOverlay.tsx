@@ -20,7 +20,6 @@ interface InfoOverlayProps {
     key: keyof FrameSettings['customExif'],
     value: string,
   ) => void;
-  baseBottom?: number;
 }
 
 const toFontWeight = (value: number): TextStyle['fontWeight'] =>
@@ -31,7 +30,6 @@ export default function InfoOverlay({
   framePadding,
   onOffsetChange,
   onCustomExifChange,
-  baseBottom = 12,
 }: InfoOverlayProps) {
   const offsetRef = useRef(settings.infoOffset);
   const dragStartRef = useRef(settings.infoOffset);
@@ -167,11 +165,11 @@ export default function InfoOverlay({
         <View style={styles.centeredBlock}>
           <View style={styles.modelRow}>
             {showLogo && (
-              <View style={[styles.logoContainer, {marginRight: 12}]}>
-                <LogoComponent 
-                  height={logoHeight} 
-                  width={logoWidth} 
-                  preserveAspectRatio="xMidYMid meet" 
+              <View style={styles.logoContainerCentered}>
+                <LogoComponent
+                  height={logoHeight}
+                  width={logoWidth}
+                  preserveAspectRatio="xMidYMid meet"
                 />
               </View>
             )}
@@ -198,11 +196,11 @@ export default function InfoOverlay({
           <View style={styles.classicColumn}>
             <View style={styles.modelRow}>
               {showLogo && (
-                <View style={[styles.logoContainer, {marginRight: 10}]}>
-                  <LogoComponent 
-                    height={logoHeight} 
-                    width={logoWidth} 
-                    preserveAspectRatio="xMinYMid meet" 
+                <View style={styles.logoContainerClassic}>
+                  <LogoComponent
+                    height={logoHeight}
+                    width={logoWidth}
+                    preserveAspectRatio="xMinYMid meet"
                   />
                 </View>
               )}
@@ -263,6 +261,16 @@ const styles = StyleSheet.create({
   logoContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logoContainerCentered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  logoContainerClassic: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
   classicRow: {
     flexDirection: 'row',

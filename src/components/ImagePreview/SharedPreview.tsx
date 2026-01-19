@@ -3,8 +3,6 @@ import {Image, StyleSheet, View} from 'react-native';
 
 import {
   DEFAULT_CROP_RECT,
-  PREVIEW_EXIF_PADDING,
-  PREVIEW_INFO_BASE_BOTTOM,
 } from '../../config';
 import {colors} from '../../theme';
 import type {CropFlip, CropRect, FrameSettings} from '../../types';
@@ -24,8 +22,6 @@ interface SharedPreviewProps {
     key: keyof FrameSettings['customExif'],
     value: string,
   ) => void;
-  exifPadding?: number;
-  infoBaseBottom?: number;
   onImageLoad?: () => void;
   onBgLoad?: () => void;
   disableBackgroundAnimation?: boolean;
@@ -42,8 +38,6 @@ export const SharedPreview = React.memo(
     cropFlip = {horizontal: false, vertical: false},
     onInfoOffsetChange,
     onCustomExifChange,
-    exifPadding = PREVIEW_EXIF_PADDING,
-    infoBaseBottom = PREVIEW_INFO_BASE_BOTTOM,
     onImageLoad,
     onBgLoad,
     disableBackgroundAnimation,
@@ -157,7 +151,6 @@ export const SharedPreview = React.memo(
           framePadding={framePadding}
           onOffsetChange={onInfoOffsetChange}
           onCustomExifChange={onCustomExifChange}
-          baseBottom={infoBaseBottom}
         />
       </View>
     );

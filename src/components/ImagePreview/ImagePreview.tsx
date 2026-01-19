@@ -10,7 +10,6 @@ import type {FrameSettings, CropFlip, CropRect} from '../../types';
 import {
   DEFAULT_CROP_RECT,
   PREVIEW_EXIF_PADDING,
-  PREVIEW_INFO_BASE_BOTTOM,
 } from '../../config';
 import {SharedPreview} from './SharedPreview';
 
@@ -97,8 +96,6 @@ export default function ImagePreview({
           cropFlip={cropFlip}
           onInfoOffsetChange={onInfoOffsetChange}
           onCustomExifChange={onCustomExifChange}
-          exifPadding={PREVIEW_EXIF_PADDING}
-          infoBaseBottom={PREVIEW_INFO_BASE_BOTTOM}
         />
       </View>
     </View>

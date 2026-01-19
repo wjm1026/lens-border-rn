@@ -6,13 +6,15 @@ export interface CameraPreset {
   defaultLens?: string;
 }
 
+type LogoSource = any; // SVG require often returns an object with default or a component
+
 export interface CameraBrand {
   id: string;
   name: string;
-  logo?: any; // SVG require
-  logoWhite?: any;
-  logoBlack?: any;
-  logoColor?: any;
+  logo?: LogoSource;
+  logoWhite?: LogoSource;
+  logoBlack?: LogoSource;
+  logoColor?: LogoSource;
   models: CameraPreset[];
 }
 
@@ -127,21 +129,9 @@ export const BRAND_LOGOS = {
     black: require('../assets/logos/phaseone.svg'),
     color: require('../assets/logos/phaseone_Color.svg'),
   },
-  sigma: {
-    white: null, // 暂无Sigma logo
-    black: null,
-  },
-  ricoh: {
-    white: null, // 暂无Ricoh logo
-    black: null,
-  },
-  pentax: {
-    white: null, // 暂无Pentax logo
-    black: null,
-  },
-  olympus: {
-    white: null, // 暂无OM System logo
-    black: null,
+  osmo_action: {
+    white: require('../assets/logos/Osmo_Action_White.svg'),
+    black: require('../assets/logos/Osmo_Action_Black.svg'),
   },
 } as const;
 
@@ -282,70 +272,17 @@ export const CAMERA_BRANDS: CameraBrand[] = [
     ],
   },
   {
-    id: 'pentax',
-    name: 'Pentax',
-    logo: BRAND_LOGOS.pentax.white,
-    logoWhite: BRAND_LOGOS.pentax.white,
-    logoBlack: BRAND_LOGOS.pentax.black,
-    models: [
-      {id: 'pentax-k1ii', brand: 'PENTAX', model: 'PENTAX K-1 Mark II', displayName: 'Pentax K-1 II', defaultLens: 'HD PENTAX-D FA 24-70mm F2.8 ED SDM WR'},
-      {id: 'pentax-k3iii', brand: 'PENTAX', model: 'PENTAX K-3 Mark III', displayName: 'Pentax K-3 III', defaultLens: 'HD PENTAX-DA 16-85mm F3.5-5.6 ED DC WR'},
-      {id: 'pentax-kf', brand: 'PENTAX', model: 'PENTAX KF', displayName: 'Pentax KF', defaultLens: 'HD PENTAX-DA 18-55mm F3.5-5.6 AL WR'},
-      {id: 'pentax-645z', brand: 'PENTAX', model: 'PENTAX 645Z', displayName: 'Pentax 645Z', defaultLens: 'HD PENTAX-D FA 645 55mm F2.8 AL [IF] SDM AW'},
-    ],
-  },
-  {
-    id: 'olympus',
-    name: 'OM System',
-    logo: BRAND_LOGOS.olympus.white,
-    logoWhite: BRAND_LOGOS.olympus.white,
-    logoBlack: BRAND_LOGOS.olympus.black,
-    models: [
-      {id: 'om-om1ii', brand: 'OM Digital Solutions', model: 'OM-1 Mark II', displayName: 'OM System OM-1 II', defaultLens: 'M.Zuiko 12-40mm F2.8 PRO II'},
-      {id: 'om-om1', brand: 'OM Digital Solutions', model: 'OM-1', displayName: 'OM System OM-1', defaultLens: 'M.Zuiko 12-40mm F2.8 PRO II'},
-      {id: 'om-om5', brand: 'OM Digital Solutions', model: 'OM-5', displayName: 'OM System OM-5', defaultLens: 'M.Zuiko 12-45mm F4.0 PRO'},
-      {id: 'oly-em1iii', brand: 'OLYMPUS CORPORATION', model: 'E-M1 Mark III', displayName: 'Olympus E-M1 III', defaultLens: 'M.Zuiko 12-40mm F2.8 PRO'},
-      {id: 'oly-em1x', brand: 'OLYMPUS CORPORATION', model: 'E-M1X', displayName: 'Olympus E-M1X', defaultLens: 'M.Zuiko 12-40mm F2.8 PRO'},
-      {id: 'oly-em5iii', brand: 'OLYMPUS CORPORATION', model: 'E-M5 Mark III', displayName: 'Olympus E-M5 III', defaultLens: 'M.Zuiko 12-45mm F4.0 PRO'},
-    ],
-  },
-  {
-    id: 'sigma',
-    name: 'Sigma',
-    logo: BRAND_LOGOS.sigma.white,
-    logoWhite: BRAND_LOGOS.sigma.white,
-    logoBlack: BRAND_LOGOS.sigma.black,
-    models: [
-      {id: 'sigma-fp', brand: 'SIGMA', model: 'fp', displayName: 'Sigma fp', defaultLens: 'SIGMA 45mm F2.8 DG DN'},
-      {id: 'sigma-fpl', brand: 'SIGMA', model: 'fp L', displayName: 'Sigma fp L', defaultLens: 'SIGMA 35mm F1.4 DG DN'},
-      {id: 'sigma-sdq', brand: 'SIGMA', model: 'sd Quattro', displayName: 'Sigma sd Quattro', defaultLens: 'SIGMA 30mm F1.4 DC HSM'},
-      {id: 'sigma-sdqh', brand: 'SIGMA', model: 'sd Quattro H', displayName: 'Sigma sd Quattro H', defaultLens: 'SIGMA 35mm F1.4 DG HSM'},
-    ],
-  },
-  {
-    id: 'ricoh',
-    name: 'Ricoh',
-    logo: BRAND_LOGOS.ricoh.white,
-    logoWhite: BRAND_LOGOS.ricoh.white,
-    logoBlack: BRAND_LOGOS.ricoh.black,
-    models: [
-      {id: 'ricoh-griii', brand: 'RICOH IMAGING COMPANY, LTD.', model: 'GR III', displayName: 'Ricoh GR III', defaultLens: 'GR 18.3mm F2.8'},
-      {id: 'ricoh-griiix', brand: 'RICOH IMAGING COMPANY, LTD.', model: 'GR IIIx', displayName: 'Ricoh GR IIIx', defaultLens: 'GR 26.1mm F2.8'},
-      {id: 'ricoh-griiihdf', brand: 'RICOH IMAGING COMPANY, LTD.', model: 'GR III HDF', displayName: 'Ricoh GR III HDF', defaultLens: 'GR 18.3mm F2.8'},
-    ],
-  },
-  {
     id: 'dji',
     name: 'DJI',
     logo: BRAND_LOGOS.dji.white,
     logoWhite: BRAND_LOGOS.dji.white,
     logoBlack: BRAND_LOGOS.dji.black,
     models: [
-      {id: 'dji-mavic3pro', brand: 'DJI', model: 'Mavic 3 Pro', displayName: 'DJI Mavic 3 Pro', defaultLens: 'Hasselblad Camera'},
-      {id: 'dji-mavic3', brand: 'DJI', model: 'Mavic 3', displayName: 'DJI Mavic 3', defaultLens: 'Hasselblad Camera'},
-      {id: 'dji-air3', brand: 'DJI', model: 'Air 3', displayName: 'DJI Air 3', defaultLens: 'Wide-Angle Camera'},
-      {id: 'dji-mini4pro', brand: 'DJI', model: 'Mini 4 Pro', displayName: 'DJI Mini 4 Pro', defaultLens: '1/1.3" CMOS Camera'},
-      {id: 'dji-osmopocket3', brand: 'DJI', model: 'Osmo Pocket 3', displayName: 'DJI Osmo Pocket 3', defaultLens: '1" CMOS Camera'},
+      {id: 'dji-mavic3pro', brand: 'DJI', model: 'Mavic 3 Pro', displayName: 'DJI Mavic 3 Pro', defaultLens: 'Hasselblad L2D-20c'},
+      {id: 'dji-mavic3', brand: 'DJI', model: 'Mavic 3', displayName: 'DJI Mavic 3', defaultLens: 'Hasselblad L2D-20c'},
+      {id: 'dji-air3', brand: 'DJI', model: 'Air 3', displayName: 'DJI Air 3', defaultLens: '24mm & 70mm Dual Camera'},
+      {id: 'dji-mini4pro', brand: 'DJI', model: 'Mini 4 Pro', displayName: 'DJI Mini 4 Pro', defaultLens: '24mm F1.7'},
+      {id: 'dji-pocket3', brand: 'DJI', model: 'Osmo Pocket 3', displayName: 'DJI Osmo Pocket 3', defaultLens: '20mm F2.0'},
     ],
   },
   {
@@ -355,13 +292,11 @@ export const CAMERA_BRANDS: CameraBrand[] = [
     logoWhite: BRAND_LOGOS.apple.white,
     logoBlack: BRAND_LOGOS.apple.black,
     models: [
-      {id: 'iphone-16promax', brand: 'Apple', model: 'iPhone 16 Pro Max', displayName: 'iPhone 16 Pro Max', defaultLens: '48MP Main Camera'},
-      {id: 'iphone-16pro', brand: 'Apple', model: 'iPhone 16 Pro', displayName: 'iPhone 16 Pro', defaultLens: '48MP Main Camera'},
-      {id: 'iphone-16', brand: 'Apple', model: 'iPhone 16', displayName: 'iPhone 16', defaultLens: '48MP Fusion Camera'},
-      {id: 'iphone-15promax', brand: 'Apple', model: 'iPhone 15 Pro Max', displayName: 'iPhone 15 Pro Max', defaultLens: '48MP Main Camera'},
-      {id: 'iphone-15pro', brand: 'Apple', model: 'iPhone 15 Pro', displayName: 'iPhone 15 Pro', defaultLens: '48MP Main Camera'},
-      {id: 'iphone-15', brand: 'Apple', model: 'iPhone 15', displayName: 'iPhone 15', defaultLens: '48MP Main Camera'},
-      {id: 'iphone-14pro', brand: 'Apple', model: 'iPhone 14 Pro', displayName: 'iPhone 14 Pro', defaultLens: '48MP Main Camera'},
+      {id: 'apple-iphone15promax', brand: 'Apple', model: 'iPhone 15 Pro Max', displayName: 'iPhone 15 Pro Max', defaultLens: '24mm F1.78 Main'},
+      {id: 'apple-iphone15pro', brand: 'Apple', model: 'iPhone 15 Pro', displayName: 'iPhone 15 Pro', defaultLens: '24mm F1.78 Main'},
+      {id: 'apple-iphone14promax', brand: 'Apple', model: 'iPhone 14 Pro Max', displayName: 'iPhone 14 Pro Max', defaultLens: '24mm F1.78 Main'},
+      {id: 'apple-iphone14pro', brand: 'Apple', model: 'iPhone 14 Pro', displayName: 'iPhone 14 Pro', defaultLens: '24mm F1.78 Main'},
+      {id: 'apple-iphone13pro', brand: 'Apple', model: 'iPhone 13 Pro', displayName: 'iPhone 13 Pro', defaultLens: '26mm F1.5 Main'},
     ],
   },
   {
@@ -372,24 +307,9 @@ export const CAMERA_BRANDS: CameraBrand[] = [
     logoBlack: BRAND_LOGOS.samsung.black,
     logoColor: BRAND_LOGOS.samsung.color,
     models: [
-      {id: 'samsung-s24ultra', brand: 'Samsung', model: 'SM-S928', displayName: 'Samsung Galaxy S24 Ultra', defaultLens: '200MP Main Camera'},
-      {id: 'samsung-s24plus', brand: 'Samsung', model: 'SM-S926', displayName: 'Samsung Galaxy S24+', defaultLens: '50MP Main Camera'},
-      {id: 'samsung-s23ultra', brand: 'Samsung', model: 'SM-S918', displayName: 'Samsung Galaxy S23 Ultra', defaultLens: '200MP Main Camera'},
-      {id: 'samsung-zfold5', brand: 'Samsung', model: 'SM-F946', displayName: 'Samsung Galaxy Z Fold5', defaultLens: '50MP Main Camera'},
-    ],
-  },
-  {
-    id: 'google',
-    name: 'Google',
-    logo: BRAND_LOGOS.google.white,
-    logoWhite: BRAND_LOGOS.google.white,
-    logoBlack: BRAND_LOGOS.google.black,
-    models: [
-      {id: 'pixel-9pro', brand: 'Google', model: 'Pixel 9 Pro', displayName: 'Google Pixel 9 Pro', defaultLens: '50MP Main Camera'},
-      {id: 'pixel-9', brand: 'Google', model: 'Pixel 9', displayName: 'Google Pixel 9', defaultLens: '50MP Main Camera'},
-      {id: 'pixel-8pro', brand: 'Google', model: 'Pixel 8 Pro', displayName: 'Google Pixel 8 Pro', defaultLens: '50MP Main Camera'},
-      {id: 'pixel-8', brand: 'Google', model: 'Pixel 8', displayName: 'Google Pixel 8', defaultLens: '50MP Main Camera'},
-      {id: 'pixel-fold', brand: 'Google', model: 'Pixel Fold', displayName: 'Google Pixel Fold', defaultLens: '48MP Main Camera'},
+      {id: 'samsung-s24ultra', brand: 'Samsung', model: 'Galaxy S24 Ultra', displayName: 'Samsung Galaxy S24 Ultra', defaultLens: '200MP Main Camera'},
+      {id: 'samsung-s23ultra', brand: 'Samsung', model: 'Galaxy S23 Ultra', displayName: 'Samsung Galaxy S23 Ultra', defaultLens: '200MP Main Camera'},
+      {id: 'samsung-s22ultra', brand: 'Samsung', model: 'Galaxy S22 Ultra', displayName: 'Samsung Galaxy S22 Ultra', defaultLens: '108MP Main Camera'},
     ],
   },
   {
@@ -400,10 +320,9 @@ export const CAMERA_BRANDS: CameraBrand[] = [
     logoBlack: BRAND_LOGOS.xiaomi.black,
     logoColor: BRAND_LOGOS.xiaomi.color,
     models: [
-      {id: 'xiaomi-14ultra', brand: 'Xiaomi', model: '14 Ultra', displayName: 'Xiaomi 14 Ultra', defaultLens: 'Leica Vario-Summilux'},
-      {id: 'xiaomi-14pro', brand: 'Xiaomi', model: '14 Pro', displayName: 'Xiaomi 14 Pro', defaultLens: 'Leica Summilux'},
-      {id: 'xiaomi-14', brand: 'Xiaomi', model: '14', displayName: 'Xiaomi 14', defaultLens: 'Leica Summilux'},
-      {id: 'xiaomi-13ultra', brand: 'Xiaomi', model: '13 Ultra', displayName: 'Xiaomi 13 Ultra', defaultLens: 'Leica Vario-Summicron'},
+      {id: 'xiaomi-14ultra', brand: 'Xiaomi', model: 'Xiaomi 14 Ultra', displayName: 'Xiaomi 14 Ultra', defaultLens: 'Leica Summilux Lens'},
+      {id: 'xiaomi-13ultra', brand: 'Xiaomi', model: 'Xiaomi 13 Ultra', displayName: 'Xiaomi 13 Ultra', defaultLens: 'Leica Vario-Summicron'},
+      {id: 'xiaomi-12sultra', brand: 'Xiaomi', model: 'Xiaomi 12S Ultra', displayName: 'Xiaomi 12S Ultra', defaultLens: 'Leica Vario-Summicron'},
     ],
   },
   {
@@ -416,7 +335,138 @@ export const CAMERA_BRANDS: CameraBrand[] = [
     models: [
       {id: 'huawei-p60pro', brand: 'HUAWEI', model: 'P60 Pro', displayName: 'Huawei P60 Pro', defaultLens: 'XMAGE Camera'},
       {id: 'huawei-mate60pro', brand: 'HUAWEI', model: 'Mate 60 Pro', displayName: 'Huawei Mate 60 Pro', defaultLens: 'XMAGE Camera'},
-      {id: 'huawei-pura70ultra', brand: 'HUAWEI', model: 'Pura 70 Ultra', displayName: 'Huawei Pura 70 Ultra', defaultLens: 'XMAGE Camera'},
+      {id: 'huawei-p50pro', brand: 'HUAWEI', model: 'P50 Pro', displayName: 'Huawei P50 Pro', defaultLens: 'Dual-Matrix Camera'},
+    ],
+  },
+  {
+    id: 'oppo',
+    name: 'OPPO',
+    logo: BRAND_LOGOS.oppo.white,
+    logoWhite: BRAND_LOGOS.oppo.white,
+    logoBlack: BRAND_LOGOS.oppo.black,
+    logoColor: BRAND_LOGOS.oppo.color,
+    models: [
+      {id: 'oppo-findx7ultra', brand: 'OPPO', model: 'Find X7 Ultra', displayName: 'OPPO Find X7 Ultra', defaultLens: 'Hasselblad Master Camera'},
+      {id: 'oppo-findx6pro', brand: 'OPPO', model: 'Find X6 Pro', displayName: 'OPPO Find X6 Pro', defaultLens: 'Hasselblad Camera'},
+      {id: 'oppo-findn3', brand: 'OPPO', model: 'Find N3', displayName: 'OPPO Find N3', defaultLens: 'Hasselblad Camera'},
+    ],
+  },
+  {
+    id: 'vivo',
+    name: 'Vivo',
+    logo: BRAND_LOGOS.vivo.white,
+    logoWhite: BRAND_LOGOS.vivo.white,
+    logoBlack: BRAND_LOGOS.vivo.black,
+    logoColor: BRAND_LOGOS.vivo.color,
+    models: [
+      {id: 'vivo-x100ultra', brand: 'vivo', model: 'X100 Ultra', displayName: 'Vivo X100 Ultra', defaultLens: 'ZEISS Vario-Apo-Sonnar'},
+      {id: 'vivo-x100pro', brand: 'vivo', model: 'X100 Pro', displayName: 'Vivo X100 Pro', defaultLens: 'ZEISS Vario-Summicron'},
+      {id: 'vivo-xfold3pro', brand: 'vivo', model: 'X Fold3 Pro', displayName: 'Vivo X Fold3 Pro', defaultLens: 'ZEISS Vario-Tessar'},
+    ],
+  },
+  {
+    id: 'oneplus',
+    name: 'OnePlus',
+    logo: BRAND_LOGOS.oneplus.white,
+    logoWhite: BRAND_LOGOS.oneplus.white,
+    logoBlack: BRAND_LOGOS.oneplus.black,
+    logoColor: BRAND_LOGOS.oneplus.color,
+    models: [
+      {id: 'oneplus-12', brand: 'OnePlus', model: 'OnePlus 12', displayName: 'OnePlus 12', defaultLens: 'Hasselblad Camera for Mobile'},
+      {id: 'oneplus-11', brand: 'OnePlus', model: 'OnePlus 11', displayName: 'OnePlus 11', defaultLens: 'Hasselblad Camera for Mobile'},
+      {id: 'oneplus-open', brand: 'OnePlus', model: 'OnePlus Open', displayName: 'OnePlus Open', defaultLens: 'Hasselblad Camera for Mobile'},
+    ],
+  },
+  {
+    id: 'honor',
+    name: 'Honor',
+    logo: BRAND_LOGOS.honor.white,
+    logoWhite: BRAND_LOGOS.honor.white,
+    logoBlack: BRAND_LOGOS.honor.black,
+    models: [
+      {id: 'honor-magic6pro', brand: 'HONOR', model: 'Magic6 Pro', displayName: 'Honor Magic6 Pro', defaultLens: 'Falcon Camera'},
+      {id: 'honor-magic5pro', brand: 'HONOR', model: 'Magic5 Pro', displayName: 'Honor Magic5 Pro', defaultLens: 'Falcon Camera'},
+    ],
+  },
+  {
+    id: 'realme',
+    name: 'Realme',
+    logo: BRAND_LOGOS.realme.white,
+    logoWhite: BRAND_LOGOS.realme.white,
+    logoBlack: BRAND_LOGOS.realme.black,
+    models: [
+      {id: 'realme-gt5pro', brand: 'realme', model: 'GT5 Pro', displayName: 'Realme GT5 Pro', defaultLens: 'Sony LYT-808 Main Camera'},
+      {id: 'realme-12proplus', brand: 'realme', model: '12 Pro+', displayName: 'Realme 12 Pro+', defaultLens: 'OmniVision OV64B Periscope'},
+    ],
+  },
+  {
+    id: 'meizu',
+    name: 'Meizu',
+    logo: BRAND_LOGOS.meizu.white,
+    logoWhite: BRAND_LOGOS.meizu.white,
+    logoBlack: BRAND_LOGOS.meizu.black,
+    logoColor: BRAND_LOGOS.meizu.color,
+    models: [
+      {id: 'meizu-21pro', brand: 'Meizu', model: 'Meizu 21 Pro', displayName: 'Meizu 21 Pro', defaultLens: 'Ultra-sensitive Main Camera'},
+      {id: 'meizu-20pro', brand: 'Meizu', model: 'Meizu 20 Pro', displayName: 'Meizu 20 Pro', defaultLens: '50MP Triple Camera'},
+    ],
+  },
+  {
+    id: 'iqoo',
+    name: 'iQOO',
+    logo: BRAND_LOGOS.iqoo.white,
+    logoWhite: BRAND_LOGOS.iqoo.white,
+    logoBlack: BRAND_LOGOS.iqoo.black,
+    logoColor: BRAND_LOGOS.iqoo.color,
+    models: [
+      {id: 'iqoo-12pro', brand: 'iQOO', model: 'iQOO 12 Pro', displayName: 'iQOO 12 Pro', defaultLens: 'Ultra-Sensing Main Camera'},
+      {id: 'iqoo-neo9pro', brand: 'iQOO', model: 'iQOO Neo9 Pro', displayName: 'iQOO Neo9 Pro', defaultLens: 'VCS IMX920 Camera'},
+    ],
+  },
+  {
+    id: 'gopro',
+    name: 'GoPro',
+    logo: BRAND_LOGOS.gopro.white,
+    logoWhite: BRAND_LOGOS.gopro.white,
+    logoBlack: BRAND_LOGOS.gopro.black,
+    logoColor: BRAND_LOGOS.gopro.color,
+    models: [
+      {id: 'gopro-hero12', brand: 'GoPro', model: 'HERO12 Black', displayName: 'GoPro HERO12 Black', defaultLens: 'SuperView Lens'},
+      {id: 'gopro-hero11', brand: 'GoPro', model: 'HERO11 Black', displayName: 'GoPro HERO11 Black', defaultLens: 'Wide Lens'},
+    ],
+  },
+  {
+    id: 'insta360',
+    name: 'Insta360',
+    logo: BRAND_LOGOS.insta360.white,
+    logoWhite: BRAND_LOGOS.insta360.white,
+    logoBlack: BRAND_LOGOS.insta360.black,
+    models: [
+      {id: 'insta360-x4', brand: 'Insta360', model: 'X4', displayName: 'Insta360 X4', defaultLens: '360 Lens'},
+      {id: 'insta360-acepro', brand: 'Insta360', model: 'Ace Pro', displayName: 'Insta360 Ace Pro', defaultLens: 'Leica Summarit Lens'},
+      {id: 'insta360-go3', brand: 'Insta360', model: 'GO 3', displayName: 'Insta360 GO 3', defaultLens: 'Wide Lens'},
+    ],
+  },
+  {
+    id: 'phaseone',
+    name: 'Phase One',
+    logo: BRAND_LOGOS.phaseone.white,
+    logoWhite: BRAND_LOGOS.phaseone.white,
+    logoBlack: BRAND_LOGOS.phaseone.black,
+    logoColor: BRAND_LOGOS.phaseone.color,
+    models: [
+      {id: 'phase-xf', brand: 'Phase One', model: 'XF IQ4', displayName: 'Phase One XF IQ4', defaultLens: 'Schneider Kreuznach 80mm LS F2.8'},
+    ],
+  },
+  {
+    id: 'osmo_action',
+    name: 'Osmo Action',
+    logo: BRAND_LOGOS.osmo_action.white,
+    logoWhite: BRAND_LOGOS.osmo_action.white,
+    logoBlack: BRAND_LOGOS.osmo_action.black,
+    models: [
+      {id: 'dji-action4', brand: 'DJI', model: 'Osmo Action 4', displayName: 'DJI Osmo Action 4', defaultLens: '1/1.3" CMOS Camera'},
+      {id: 'dji-action3', brand: 'DJI', model: 'Osmo Action 3', displayName: 'DJI Osmo Action 3', defaultLens: '1/1.7" CMOS Camera'},
     ],
   },
 ];

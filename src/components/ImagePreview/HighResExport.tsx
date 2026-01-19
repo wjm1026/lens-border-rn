@@ -3,8 +3,6 @@ import {Dimensions, PixelRatio, StyleSheet, View} from 'react-native';
 
 import {
   HIGH_RES_MAX_DIMENSION,
-  PREVIEW_EXIF_PADDING,
-  PREVIEW_INFO_BASE_BOTTOM,
 } from '../../config';
 import type {CropFlip, CropRect, FrameSettings} from '../../types';
 import {useScaledSettings} from '../../hooks/useScaledSettings';
@@ -84,10 +82,6 @@ export const HighResExport = React.memo(
       };
     }, [safeScale, settings.padding, previewAspectRatio]);
 
-    // 3. 计算缩放后的常量
-    const extraExifPadding = PREVIEW_EXIF_PADDING * safeScale;
-    const baseBottom = PREVIEW_INFO_BASE_BOTTOM * safeScale;
-
     // 4. 三重检查触发 onReady
     React.useEffect(() => {
       if (isLayoutReady && isImageReady && isBgReady && onReady) {
@@ -125,8 +119,6 @@ export const HighResExport = React.memo(
             cropRect={cropRect}
             cropRotation={cropRotation}
             cropFlip={cropFlip}
-            exifPadding={extraExifPadding}
-            infoBaseBottom={baseBottom}
             onImageLoad={handleImageLoad}
             onBgLoad={handleBgLoad}
             disableBackgroundAnimation={true}

@@ -15,7 +15,11 @@ import {useCameraSelectorState} from '../../hooks/useCameraSelectorState';
 import {useMenuPosition} from '../../hooks/useMenuPosition';
 import {CAMERA_SELECTOR_MENU_MAX_HEIGHT} from '../../config';
 import {colors, fontSize} from '../../theme';
-import {type CameraBrand, type CameraPreset} from '../../data/cameraPresets';
+import {
+  getBrandByPresetId,
+  type CameraBrand,
+  type CameraPreset,
+} from '../../data/cameraPresets';
 
 interface CameraSelectorProps {
   onSelect: (preset: CameraPreset | null) => void;
@@ -61,6 +65,11 @@ export default function CameraSelector({
   const displayText =
     selectedPreset?.displayName || currentExifCamera || '选择相机型号';
 
+  // Get the brand logo for the trigger button
+  const selectedBrand = selectedPreset?.id ? getBrandByPresetId(selectedPreset.id) : null;
+  const logoSource = selectedBrand?.logoWhite;
+  const LogoComponent = logoSource?.default || logoSource;
+
   return (
     <View>
       <View ref={triggerRef} collapsable={false}>
@@ -70,7 +79,13 @@ export default function CameraSelector({
           activeOpacity={0.8}
           accessibilityRole="button"
           accessibilityLabel="选择相机型号">
-          <Camera size={16} color="rgba(255,255,255,0.6)" />
+          {isPresetSelected && LogoComponent && typeof LogoComponent !== 'number' ? (
+            <View style={styles.triggerLogoContainer}>
+               <LogoComponent height={18} width={50} preserveAspectRatio="xMinYMid meet" />
+            </View>
+          ) : (
+            <Camera size={16} color="rgba(255,255,255,0.6)" />
+          )}
           <Text
             style={[
               styles.triggerText,
@@ -255,6 +270,11 @@ const styles = StyleSheet.create({
   triggerButtonActive: {
     borderColor: 'rgba(255,255,255,0.25)',
     backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  triggerLogoContainer: {
+    marginRight: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   triggerText: {
     flex: 1,
