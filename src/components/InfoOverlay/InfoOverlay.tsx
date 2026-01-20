@@ -399,6 +399,6 @@ const styles = StyleSheet.create({
   logoContainerCentered: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 6,
+    marginRight: 8,
   },
 });

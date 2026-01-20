@@ -79,7 +79,7 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
   hasselblad: {
     white: require('../assets/logos/hasselblad-White.svg'),
     variants: {
-      white: {aspectRatio: 13.1},
+      white: {aspectRatio: 6},
     },
   },
   dji: {
