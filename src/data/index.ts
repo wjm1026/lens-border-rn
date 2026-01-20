@@ -46,16 +46,22 @@ export const CAMERA_BRANDS: CameraBrand[] = (() => {
 
   _cameraBrandsCache = BRAND_ORDER
     .filter(id => CAMERA_MODELS[id].length > 0) // 过滤掉没有型号的品牌
-    .map(id => ({
-      id,
-      name: BRAND_DISPLAY_NAMES[id],
-      logo: BRAND_LOGOS[id]?.white,
-      logoWhite: BRAND_LOGOS[id]?.white,
-      logoBlack: BRAND_LOGOS[id]?.black,
-      logoColor: BRAND_LOGOS[id]?.color,
-      isSquare: BRAND_LOGOS[id]?.isSquare,
-      models: CAMERA_MODELS[id],
-    }));
+    .map(id => {
+      const logos = BRAND_LOGOS[id];
+      // 找到第一个可用的 Logo 作为默认兜底
+      const firstAvailableLogo = logos ? logos.white || logos.color || logos.original || logos.black : null;
+      
+      return {
+        id,
+        name: BRAND_DISPLAY_NAMES[id],
+        logo: firstAvailableLogo,
+        logoWhite: logos?.white,
+        logoBlack: logos?.black,
+        logoColor: logos?.color,
+        isSquare: logos?.isSquare,
+        models: CAMERA_MODELS[id],
+      };
+    });
 
   return _cameraBrandsCache;
 })();

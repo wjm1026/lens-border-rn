@@ -27,7 +27,6 @@ export type BrandId =
   | 'samsung'
   | 'xiaomi'
   | 'huawei'
-  | 'google'
   | 'oppo'
   | 'vivo'
   | 'oneplus'
@@ -43,21 +42,18 @@ export type BrandId =
 export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
   nikon: {
     white: require('../assets/logos/Nikon_White.svg'),
-    color: require('../assets/logos/Nikon_Color.svg'),
     original: require('../assets/logos/Nikon.svg'),
   },
   canon: {
-    white: require('../assets/logos/Canon_White.svg'),
+    white: require('../assets/logos/Canon_Color.svg'),
     color: require('../assets/logos/Canon_Color.svg'),
   },
   sony: {
     white: require('../assets/logos/SONY_White.svg'),
     alphaWhite: require('../assets/logos/SONYalpha_White.svg'),
-    alphaBlack: require('../assets/logos/SONYalpha_Black.svg'),
   },
   fujifilm: {
     white: require('../assets/logos/Fujifilm_White.svg'),
-    color: require('../assets/logos/Fujifilm_Color.svg'),
   },
   panasonic: {
     white: require('../assets/logos/Lumix_White.svg'),
@@ -80,31 +76,24 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
   },
   samsung: {
     white: require('../assets/logos/Samsung_White.svg'),
-    color: require('../assets/logos/Samsung_black-2.svg'),
   },
   xiaomi: {
-    white: require('../assets/logos/Xiaomi_White.svg'),
-    black: require('../assets/logos/Xiaomi_Black.svg'),
     color: require('../assets/logos/Xiaomi.svg'),
     isSquare: true,
   },
   huawei: {
     white: require('../assets/logos/Huawei_White.svg'),
-    black: require('../assets/logos/Huawei_Black.svg'),
     color: require('../assets/logos/Huawei_Color.svg'),
     isSquare: true,
   },
   oppo: {
     white: require('../assets/logos/OPPO_White.svg'),
-    color: require('../assets/logos/OPPO_Color.svg'),
   },
   vivo: {
     white: require('../assets/logos/VIvo_White.svg'),
-    color: require('../assets/logos/VIvo_Color.svg'),
   },
   oneplus: {
     white: require('../assets/logos/Oneplus_White.svg'),
-    color: require('../assets/logos/Oneplus_Color.svg'),
   },
   honor: {
     white: require('../assets/logos/HONOR_White.svg'),
@@ -114,23 +103,18 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
   },
   meizu: {
     white: require('../assets/logos/Meizu-White.svg'),
-    color: require('../assets/logos/Meizu_Color.svg'),
   },
   iqoo: {
     white: require('../assets/logos/IQOO_White.svg'),
-    color: require('../assets/logos/IQOO_Color.svg'),
   },
   gopro: {
     white: require('../assets/logos/GoPro_White.svg'),
-    color: require('../assets/logos/GoPro_Color.svg'),
   },
   insta360: {
     white: require('../assets/logos/Insta360_White.svg'),
-    black: require('../assets/logos/Insta360_Black.svg'),
   },
   phaseone: {
     white: require('../assets/logos/phaseone_White.svg'),
-    black: require('../assets/logos/phaseone.svg'),
     color: require('../assets/logos/phaseone_Color.svg'),
   },
   osmo_action: {

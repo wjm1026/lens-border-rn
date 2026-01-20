@@ -38,7 +38,10 @@ export default function BrandGroup({
   selectedId,
 }: BrandGroupProps) {
   const hasSelected = brand.models.some(model => model.id === selectedId);
-  const LogoComponent = getLogoComponent(brand.logoWhite);
+  
+  // 智能选择 Logo：优先 white，其次 color, original, 最后取第一个
+  const logoSource = brand.logoWhite || brand.logoColor || brand.logo || brand.logoBlack;
+  const LogoComponent = getLogoComponent(logoSource);
 
   return (
     <View style={styles.container}>

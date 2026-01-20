@@ -203,10 +203,21 @@ export default function InfoOverlay({
   // 获取 Logo 资源
   const logoSource = useMemo(() => {
     if (!brand) return null;
+    const brandLogos = BRAND_LOGOS[brand.id];
+    if (!brandLogos) return null;
+
+    // 1. 尝试选中的变体
+    if (brandLogos[effectiveVariant]) {
+      return brandLogos[effectiveVariant];
+    }
+
+    // 2. 依次尝试回退到常用变体
     return (
-      BRAND_LOGOS[brand.id]?.[effectiveVariant] ||
-      brand.logoWhite ||
-      brand.logoBlack
+      brandLogos.white ||
+      brandLogos.color ||
+      brandLogos.original ||
+      // 3. 实在不行，拿第一个非配置字段出来显示
+      brandLogos[Object.keys(brandLogos).find(k => k !== 'isSquare') || '']
     );
   }, [brand, effectiveVariant]);
 

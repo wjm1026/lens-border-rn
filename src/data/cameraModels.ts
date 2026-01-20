@@ -132,7 +132,6 @@ export const CAMERA_MODELS: Record<BrandId, CameraPreset[]> = {
     {id: 'huawei-mate60pro', brand: 'HUAWEI', model: 'Mate 60 Pro', modelOnly: 'Mate 60 Pro', displayName: 'Huawei Mate 60 Pro', defaultLens: 'XMAGE Camera'},
     {id: 'huawei-p50pro', brand: 'HUAWEI', model: 'P50 Pro', modelOnly: 'P50 Pro', displayName: 'Huawei P50 Pro', defaultLens: 'Dual-Matrix Camera'},
   ],
-  google: [],
   oppo: [
     {id: 'oppo-findx7ultra', brand: 'OPPO', model: 'Find X7 Ultra', modelOnly: 'Find X7 Ultra', displayName: 'OPPO Find X7 Ultra', defaultLens: 'Hasselblad Master Camera'},
     {id: 'oppo-findx6pro', brand: 'OPPO', model: 'Find X6 Pro', modelOnly: 'Find X6 Pro', displayName: 'OPPO Find X6 Pro', defaultLens: 'Hasselblad Camera'},
@@ -198,7 +197,6 @@ export const BRAND_DISPLAY_NAMES: Record<BrandId, string> = {
   samsung: 'Samsung',
   xiaomi: 'Xiaomi',
   huawei: 'Huawei',
-  google: 'Google',
   oppo: 'OPPO',
   vivo: 'Vivo',
   oneplus: 'OnePlus',

@@ -94,7 +94,10 @@ export default function CameraSelector({
   const selectedBrand = selectedPreset?.id
     ? getBrandByPresetId(selectedPreset.id)
     : null;
-  const LogoComponent = getLogoComponent(selectedBrand?.logoWhite);
+    
+  // 智能选择 Logo：优先使用选中的品牌下的可用变体
+  const logoSource = selectedBrand?.logoWhite || selectedBrand?.logoColor || selectedBrand?.logo || selectedBrand?.logoBlack;
+  const LogoComponent = getLogoComponent(logoSource);
   const hasLogo = LogoComponent && typeof LogoComponent !== 'number';
 
   // 当有 Logo 时只显示型号（如 "Z9"），否则显示完整名称（如 "Nikon Z9"）
