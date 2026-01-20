@@ -56,6 +56,9 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
   sony: {
     white: require('../assets/logos/SONY_White.svg'),
     alphaWhite: require('../assets/logos/SONYalpha_White.svg'),
+    variants: {
+      alphaWhite: {isSquare: true, aspectRatio: 0.85},
+    },
   },
   fujifilm: {
     white: require('../assets/logos/Fujifilm_White.svg'),

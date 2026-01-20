@@ -26,7 +26,9 @@ interface BrandGroupProps {
  * 处理 require 返回的对象和直接组件两种情况
  */
 const getLogoComponent = (logoSource: any) => {
-  if (!logoSource) {return null;}
+  if (!logoSource) {
+    return null;
+  }
   return logoSource?.default || logoSource;
 };
 
@@ -38,9 +40,10 @@ export default function BrandGroup({
   selectedId,
 }: BrandGroupProps) {
   const hasSelected = brand.models.some(model => model.id === selectedId);
-  
+
   // 智能选择 Logo：优先 white，其次 color, original, 最后取第一个
-  const logoSource = brand.logoWhite || brand.logoColor || brand.logo || brand.logoBlack;
+  const logoSource =
+    brand.logoWhite || brand.logoColor || brand.logo || brand.logoBlack;
   const LogoComponent = getLogoComponent(logoSource);
 
   return (

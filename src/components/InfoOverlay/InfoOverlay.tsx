@@ -18,6 +18,7 @@ import {
   getCameraPresetById,
   detectBrandFromContent,
   BRAND_LOGOS,
+  matchPresetByExif,
 } from '../../data/index';
 
 interface InfoOverlayProps {
@@ -174,8 +175,17 @@ export default function InfoOverlay({
       };
     }
 
-    // Case B: 没有选择预设，尝试从文本中智能分析品牌 (例如从 "NIKON D800" 识别出 Nikon)
+    // Case B: 没有手工选择预设，尝试从文本中智能匹配预设 (识别出具体型号)
     if (rawModelValue) {
+      const preset = matchPresetByExif(rawModelValue);
+      if (preset) {
+        return {
+          brand: getBrandByPresetId(preset.id),
+          cameraPreset: preset,
+        };
+      }
+
+      // Case C: 只认出了品牌，没认出型号
       return {
         brand: detectBrandFromContent(rawModelValue),
         cameraPreset: undefined,
@@ -194,17 +204,17 @@ export default function InfoOverlay({
   const customLogoColor = settings.customExif.logoColor;
 
   // 计算实际使用的变体
-  // 规则：如果用户指定了自定义颜色，强制使用 'white' 变体（因为只有 white 变体支持 currentColor）
-  const effectiveVariant = useMemo(
-    () => (customLogoColor ? 'white' : logoVariant || 'white'),
-    [customLogoColor, logoVariant],
-  );
+  const effectiveVariant = useMemo(() => logoVariant || 'white', [logoVariant]);
 
   // 获取 Logo 资源
   const logoSource = useMemo(() => {
-    if (!brand) return null;
+    if (!brand) {
+      return null;
+    }
     const brandLogos = BRAND_LOGOS[brand.id];
-    if (!brandLogos) return null;
+    if (!brandLogos) {
+      return null;
+    }
 
     // 1. 尝试选中的变体
     if (brandLogos[effectiveVariant]) {
@@ -229,11 +239,20 @@ export default function InfoOverlay({
   // Logo 颜色完全独立于文字颜色
   // 仅对 white 变体生效（其他变体使用 SVG 原本的颜色）
   const activeLogoColor = useMemo(() => {
-    // 如果用户设置了自定义 Logo 颜色，使用它
-    if (customLogoColor) return customLogoColor;
-    // 非 white 变体使用 SVG 原本的颜色
-    if (logoVariant && logoVariant !== 'white') return undefined;
-    // white 变体默认使用白色（独立于文字颜色）
+    // 1. 如果有自定义颜色，直接使用
+    if (customLogoColor) {
+      return customLogoColor;
+    }
+
+    // 2. 如果没有自定义颜色，且是变体原本就带颜色的，返回 undefined 让 SVG 使用内建颜色
+    if (logoVariant === 'original' || logoVariant === 'color') {
+      return undefined;
+    }
+
+    // 3. 对于 white, alphaWhite, black 等这些支持调色的变体，提供默认值
+    if (logoVariant?.toLowerCase().includes('black')) {
+      return '#000000';
+    }
     return '#FFFFFF';
   }, [customLogoColor, logoVariant]);
 
@@ -257,7 +276,9 @@ export default function InfoOverlay({
 
   // 计算实际显示的文本 (Value)
   const displayModelText = useMemo(() => {
-    if (!rawModelValue) return '';
+    if (!rawModelValue) {
+      return '';
+    }
 
     // 规则 3: 如果不显示 Logo (功能关闭 或 没匹配到)，直接显示完整文案
     if (!shouldShowLogo) {
@@ -266,34 +287,36 @@ export default function InfoOverlay({
 
     // 规则 2: 有 Logo 的情况下，需要去除文案中的品牌名称避免重复
     const text = rawModelValue.trim();
-    const lowerText = text.toLowerCase();
 
-    // 2.1 精确匹配预设 (如果内容完全等于预设的全名，直接用 Short Name)
-    if (cameraPreset && text === cameraPreset.model) {
-      return cameraPreset.modelOnly;
+    // 2.1 精确匹配或模糊匹配后的清理
+    // 如果有匹配的预设，且当前文本规范化后等于预设名称规范化后的结果，直接使用预设的缩写
+    if (cameraPreset) {
+      const normText = text.toLowerCase().replace(/\s+/g, '');
+      const normModel = cameraPreset.model.toLowerCase().replace(/\s+/g, '');
+      if (normText === normModel || normText === `nikon${normModel}`) {
+        return cameraPreset.modelOnly;
+      }
     }
 
     // 2.2 通用匹配：智能移除品牌前缀
+    let cleanedText = text;
     if (brand) {
-      // 尝试移除 Display Name (e.g. "Nikon" from "Nikon D800")
-      if (brand.name) {
-        const brandNameLower = brand.name.toLowerCase();
-        if (lowerText.startsWith(brandNameLower)) {
-          return text.slice(brand.name.length).trim();
-        }
-      }
+      const brandWords = [
+        brand.name,
+        brand.id,
+        'CORPORATION',
+        'DIGITAL CAMERA',
+      ].map(s => s.toLowerCase());
 
-      // 尝试移除 Brand ID (e.g. "nikon" from "NIKON CORPORATION D800")
-      if (brand.id) {
-        const brandIdLower = brand.id.toLowerCase();
-        if (lowerText.startsWith(brandIdLower)) {
-          return text.slice(brand.id.length).trim();
-        }
-      }
+      const words = cleanedText.split(/\s+/);
+      const remainingWords = words.filter(
+        w => !brandWords.includes(w.toLowerCase()),
+      );
+      cleanedText = remainingWords.join(' ');
     }
 
-    // 如果没法智能移除，就保持原样 (这通常是用户自定义的非标准格式)
-    return text;
+    // 2.3 进一步优化：去除类似于 "Z 9" 或 "R 5" 中间的空格，使其更紧凑
+    return cleanedText.replace(/([A-Z])\s+(\d)/g, '$1$2').trim();
   }, [rawModelValue, shouldShowLogo, cameraPreset, brand]);
 
   // ===========================================================================
@@ -399,6 +422,6 @@ const styles = StyleSheet.create({
   logoContainerCentered: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 6,
   },
 });

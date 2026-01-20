@@ -43,7 +43,9 @@ const SQUARE_LOGO_BRANDS = ['leica', 'apple', 'huawei', 'xiaomi'] as const;
  * 获取 Logo 组件（处理 require 返回值）
  */
 const getLogoComponent = (logoSource: any) => {
-  if (!logoSource) {return null;}
+  if (!logoSource) {
+    return null;
+  }
   return logoSource?.default || logoSource;
 };
 
@@ -94,9 +96,13 @@ export default function CameraSelector({
   const selectedBrand = selectedPreset?.id
     ? getBrandByPresetId(selectedPreset.id)
     : null;
-    
+
   // 智能选择 Logo：优先使用选中的品牌下的可用变体
-  const logoSource = selectedBrand?.logoWhite || selectedBrand?.logoColor || selectedBrand?.logo || selectedBrand?.logoBlack;
+  const logoSource =
+    selectedBrand?.logoWhite ||
+    selectedBrand?.logoColor ||
+    selectedBrand?.logo ||
+    selectedBrand?.logoBlack;
   const LogoComponent = getLogoComponent(logoSource);
   const hasLogo = LogoComponent && typeof LogoComponent !== 'number';
 

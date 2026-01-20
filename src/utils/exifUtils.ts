@@ -125,9 +125,9 @@ export async function parseExif(uri: string): Promise<ParsedExifData> {
         : undefined,
     ExposureTime: formatExposureTime(exposureValue),
     ISO: isoValue,
-    FocalLength: 
-      typeof focalLengthValue === 'number' 
-        ? `${Math.round(focalLengthValue)}mm` 
+    FocalLength:
+      typeof focalLengthValue === 'number'
+        ? `${Math.round(focalLengthValue)}mm`
         : undefined,
     DateTime: formatExifDate(dateValue),
     _raw: exif,

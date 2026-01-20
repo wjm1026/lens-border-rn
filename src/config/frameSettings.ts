@@ -26,13 +26,13 @@ export const DEFAULT_SETTINGS: FrameSettings = {
   line1Style: {
     fontSize: 18,
     fontWeight: 700,
-    letterSpacing: 0.05,
+    letterSpacing: 0.02,
     opacity: 1,
   },
   line2Style: {
     fontSize: 14,
     fontWeight: 400,
-    letterSpacing: 0.02,
+    letterSpacing: 0,
     opacity: 0.7,
   },
   customExif: {},

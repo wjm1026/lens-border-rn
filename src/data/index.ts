@@ -50,7 +50,7 @@ export const CAMERA_BRANDS: CameraBrand[] = (() => {
       const logos = BRAND_LOGOS[id];
       // 找到第一个可用的 Logo 作为默认兜底
       const firstAvailableLogo = logos ? logos.white || logos.color || logos.original || logos.black : null;
-      
+
       return {
         id,
         name: BRAND_DISPLAY_NAMES[id],
@@ -160,37 +160,40 @@ export const matchPresetByExif = (exifModel?: string): CameraPreset | undefined 
  * 用于当无法匹配特定型号预设时，尝试识别品牌Logo
  */
 export const detectBrandFromContent = (content: string): CameraBrand | undefined => {
-  if (!content) return undefined;
-  
+  if (!content) {
+    return undefined;
+  }
+
   const lowerContent = content.toLowerCase();
-  
+
   // 遍历所有品牌进行模糊匹配
   // 注意：需要确保 CAMERA_BRANDS 包含了所有定义的品牌，即使该品牌目前没有预设型号
   // 目前 CAMERA_BRANDS只包含有 models 的品牌，如果 google 等只有 logo 没有 models，可能需要直接查 BRAND_LOGOS
-  
+
   // 优先匹配 CAMERA_BRANDS (已有的完整品牌数据)
   for (const brand of CAMERA_BRANDS) {
     if (
-      lowerContent.includes(brand.id.toLowerCase()) || 
+      lowerContent.includes(brand.id.toLowerCase()) ||
       lowerContent.includes(brand.name.toLowerCase())
     ) {
       return brand;
     }
   }
-  
   // 如果上面的没匹配到（因为filtered out empty models），尝试直接匹配 BRAND_LOGOS 中的 key
   // 这样即使暂时没有录入该品牌的具体型号，只要能识别出品牌名，也能显示 Logo
   for (const brandId of BRAND_ORDER) {
     const name = BRAND_DISPLAY_NAMES[brandId];
-    
+
     // 特殊别名处理
     const aliases = [];
-    if (brandId === 'apple') aliases.push('iphone');
-    
+    if (brandId === 'apple') {
+      aliases.push('iphone');
+    }
+
     if (
-        lowerContent.includes(brandId.toLowerCase()) || 
-        (name && lowerContent.includes(name.toLowerCase())) ||
-        aliases.some(alias => lowerContent.includes(alias))
+      lowerContent.includes(brandId.toLowerCase()) ||
+      (name && lowerContent.includes(name.toLowerCase())) ||
+      aliases.some(alias => lowerContent.includes(alias))
     ) {
         // 构造一个临时的 CameraBrand 对象
         return {
@@ -201,7 +204,7 @@ export const detectBrandFromContent = (content: string): CameraBrand | undefined
             logoBlack: BRAND_LOGOS[brandId]?.black,
             logoColor: BRAND_LOGOS[brandId]?.color,
             isSquare: BRAND_LOGOS[brandId]?.isSquare,
-            models: []
+            models: [],
         } as CameraBrand;
     }
   }

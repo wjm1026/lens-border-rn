@@ -208,13 +208,13 @@ export function ColorPicker({
     }
   };
 
-  const handlePresetSelect = (presetColor: string) => {
+  const handlePresetSelect = useCallback((presetColor: string) => {
     const hsv = hexToHsv(presetColor);
     setHue(hsv.h);
     setSaturation(hsv.s);
     setBrightness(hsv.v);
     setHexInput(presetColor.replace('#', '').toUpperCase());
-  };
+  }, []);
 
   const openPicker = useCallback(() => {
     const hsv = hexToHsv(color);
@@ -353,7 +353,9 @@ export function ColorPicker({
   ).current;
 
   // 预设颜色滑动选择
-  const swatchLayouts = useRef<Record<number, {x: number; y: number; width: number; height: number}>>({});
+  const swatchLayouts = useRef<
+    Record<number, {x: number; y: number; width: number; height: number}>
+  >({});
   const swatchContainerRef = useRef<View>(null);
   const swatchContainerPos = useRef({x: 0, y: 0});
   const lastSwatchIndex = useRef(-1);
