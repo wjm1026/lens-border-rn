@@ -10,6 +10,7 @@ export interface BrandLogoSet {
   original?: any;
   alphaWhite?: any;
   alphaBlack?: any;
+  isSquare?: boolean;
 }
 
 export type BrandId =
@@ -69,6 +70,7 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
     white: require('../assets/logos/Leica_White.svg'),
     black: require('../assets/logos/Leica_Black.svg'),
     color: require('../assets/logos/Leica_Color.svg'),
+    isSquare: true,
   },
   hasselblad: {
     white: require('../assets/logos/hasselblad-White.svg'),
@@ -81,6 +83,7 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
   apple: {
     white: require('../assets/logos/Apple_White.svg'),
     black: require('../assets/logos/Apple_Black.svg'),
+    isSquare: true,
   },
   samsung: {
     white: require('../assets/logos/Samsung_White.svg'),
@@ -91,11 +94,13 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
     white: require('../assets/logos/Xiaomi_White.svg'),
     black: require('../assets/logos/Xiaomi_Black.svg'),
     color: require('../assets/logos/Xiaomi.svg'),
+    isSquare: true,
   },
   huawei: {
     white: require('../assets/logos/Huawei_White.svg'),
     black: require('../assets/logos/Huawei_Black.svg'),
     color: require('../assets/logos/Huawei_Color.svg'),
+    isSquare: true,
   },
   google: {
     white: undefined,
