@@ -45,7 +45,6 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
     original: require('../assets/logos/Nikon.svg'),
   },
   canon: {
-    white: require('../assets/logos/Canon_Color.svg'),
     color: require('../assets/logos/Canon_Color.svg'),
   },
   sony: {
