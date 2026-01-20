@@ -11,6 +11,8 @@ export interface BrandLogoSet {
   alphaWhite?: any;
   alphaBlack?: any;
   isSquare?: boolean;
+  aspectRatio?: number;
+  variants?: Record<string, {isSquare?: boolean; aspectRatio?: number}>;
   [key: string]: any;
 }
 
@@ -43,8 +45,12 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
   nikon: {
     white: require('../assets/logos/Nikon_White.svg'),
     original: require('../assets/logos/Nikon.svg'),
+    variants: {
+      original: {isSquare: true, aspectRatio: 1.0},
+    },
   },
   canon: {
+    white: require('../assets/logos/Canon_White.svg'),
     color: require('../assets/logos/Canon_Color.svg'),
   },
   sony: {
@@ -53,25 +59,39 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
   },
   fujifilm: {
     white: require('../assets/logos/Fujifilm_White.svg'),
+    variants: {
+      white: {aspectRatio: 3.6},
+    },
   },
   panasonic: {
     white: require('../assets/logos/Lumix_White.svg'),
+    variants: {
+      white: {aspectRatio: 3.5},
+    },
   },
   leica: {
     white: require('../assets/logos/Leica_White.svg'),
     black: require('../assets/logos/Leica_Black.svg'),
     color: require('../assets/logos/Leica_Color.svg'),
     isSquare: true,
+    aspectRatio: 1.0,
   },
   hasselblad: {
     white: require('../assets/logos/hasselblad-White.svg'),
+    variants: {
+      white: {aspectRatio: 13.1},
+    },
   },
   dji: {
     white: require('../assets/logos/DJI_White.svg'),
+    variants: {
+      white: {aspectRatio: 1.75},
+    },
   },
   apple: {
     white: require('../assets/logos/Apple_White.svg'),
     isSquare: true,
+    aspectRatio: 0.85,
   },
   samsung: {
     white: require('../assets/logos/Samsung_White.svg'),
@@ -79,6 +99,7 @@ export const BRAND_LOGOS: Record<BrandId, BrandLogoSet> = {
   xiaomi: {
     color: require('../assets/logos/Xiaomi.svg'),
     isSquare: true,
+    aspectRatio: 1.2,
   },
   huawei: {
     white: require('../assets/logos/Huawei_White.svg'),

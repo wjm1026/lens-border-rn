@@ -301,8 +301,14 @@ export default function InfoOverlay({
   // ===========================================================================
 
   const logoHeight = settings.line1Style.fontSize * 1.1;
-  const isSquareLogo = brand?.isSquare;
-  const logoWidth = logoHeight * (isSquareLogo ? 1.2 : 3.5);
+  const brandLogos = brand ? BRAND_LOGOS[brand.id] : null;
+  const variantMeta = brandLogos?.variants?.[effectiveVariant];
+
+  const effectivelySquare = variantMeta?.isSquare ?? brand?.isSquare;
+  const logoAspectRatio =
+    variantMeta?.aspectRatio ?? (effectivelySquare ? 1.2 : 3.5);
+
+  const logoWidth = logoHeight * logoAspectRatio;
 
   if (!settings.showExif) {
     return null;
@@ -327,7 +333,7 @@ export default function InfoOverlay({
                   width={logoWidth}
                   fill={activeLogoColor}
                   style={activeLogoColor ? {color: activeLogoColor} : undefined}
-                  preserveAspectRatio="xMaxYMid meet"
+                  preserveAspectRatio="xMidYMid meet"
                 />
               </TouchableOpacity>
             )}
@@ -393,6 +399,6 @@ const styles = StyleSheet.create({
   logoContainerCentered: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 6,
   },
 });

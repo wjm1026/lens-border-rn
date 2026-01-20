@@ -36,8 +36,9 @@ export default function LogoPickerModal({
     return null;
   }
 
+  const EXCLUDED_KEYS = ['isSquare', 'aspectRatio', 'variants'];
   const variants = Object.keys(brandLogos).filter(
-    k => k !== 'isSquare',
+    k => !EXCLUDED_KEYS.includes(k),
   ) as string[];
 
   return (
