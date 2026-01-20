@@ -29,16 +29,6 @@ export function useInfoPanelLogic({
   initialExif,
 }: UseInfoPanelLogicOptions) {
   /**
-   * 更新自定义 EXIF 字段
-   */
-  const updateCustomExif = useCallback(
-    (key: keyof FrameSettings['customExif'], value: string) => {
-      updateSettings('customExif', {...settings.customExif, [key]: value});
-    },
-    [settings.customExif, updateSettings],
-  );
-
-  /**
    * 更新行样式（line1Style 或 line2Style）
    */
   const updateLineStyle = useCallback(
@@ -91,7 +81,6 @@ export function useInfoPanelLogic({
       : undefined;
 
   return {
-    updateCustomExif,
     updateLineStyle,
     handleCameraSelect,
     exifCameraName,

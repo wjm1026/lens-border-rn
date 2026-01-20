@@ -10,6 +10,9 @@ import {ChevronDown} from 'lucide-react-native';
 import {colors, fontSize} from '../../theme';
 import type {CameraBrand, CameraPreset} from '../../data';
 
+// Logo 在深色背景下的默认填充色
+const LOGO_FILL_COLOR = colors.textPrimary;
+
 interface BrandGroupProps {
   brand: CameraBrand;
   isExpanded: boolean;
@@ -46,7 +49,12 @@ export default function BrandGroup({
         activeOpacity={0.8}>
         {LogoComponent && typeof LogoComponent !== 'number' ? (
           <View style={styles.logoContainer}>
-            <LogoComponent width={20} height={20} />
+            <LogoComponent
+              width={20}
+              height={20}
+              fill={LOGO_FILL_COLOR}
+              style={{color: LOGO_FILL_COLOR}}
+            />
           </View>
         ) : (
           <View style={styles.logoPlaceholder} />

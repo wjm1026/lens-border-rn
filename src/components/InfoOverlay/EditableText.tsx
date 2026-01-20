@@ -21,6 +21,7 @@ interface EditableTextProps {
   value: string;
   placeholder: string;
   onChange: (value: string) => void;
+  onLongPress?: () => void;
   style?: StyleProp<TextStyle>;
   textAlign?: 'left' | 'center' | 'right';
 }
@@ -31,6 +32,7 @@ export default function EditableText({
   value,
   placeholder,
   onChange,
+  onLongPress,
   style,
   textAlign = 'center',
 }: EditableTextProps) {
@@ -174,6 +176,8 @@ export default function EditableText({
       ) : (
         <TouchableOpacity
           onPress={handlePress}
+          onLongPress={onLongPress}
+          delayLongPress={500}
           activeOpacity={0.7}
           style={styles.textContainer}>
           <Text style={[style, {textAlign}, !value && styles.placeholder]}>

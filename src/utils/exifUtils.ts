@@ -5,11 +5,18 @@ const formatExposureTime = (exposureTime?: number) => {
   if (!exposureTime) {
     return undefined;
   }
+  // 大于等于1秒，直接显示数值 (保留1位小数，去掉末尾0)
   if (exposureTime >= 1) {
-    return `${exposureTime}`;
+    return `${parseFloat(exposureTime.toFixed(1))}`;
   }
+  // 小于1秒，显示分数
   if (exposureTime > 0) {
-    return `1/${Math.round(1 / exposureTime)}`;
+    const denominator = Math.round(1 / exposureTime);
+    // 避免出现 1/1s 的情况，如果是 1/1 则直接归为 1s
+    if (denominator === 1) {
+      return '1';
+    }
+    return `1/${denominator}`;
   }
   return undefined;
 };
@@ -74,6 +81,9 @@ export const buildExifParams = (
     return undefined;
   }
   const parts: string[] = [];
+  if (exif.FocalLength) {
+    parts.push(exif.FocalLength);
+  }
   if (exif.FNumber) {
     parts.push(`F${exif.FNumber}`);
   }
@@ -95,6 +105,7 @@ export async function parseExif(uri: string): Promise<ParsedExifData> {
   const fNumberValue = toNumber(exif.FNumber);
   const exposureValue = toNumber(exif.ExposureTime);
   const isoValue = getIsoValue(exif.ISOSpeedRatings ?? exif.ISO);
+  const focalLengthValue = toNumber(exif.FocalLength ?? exif.FocalLengthIn35mmFilm);
   const dateValue =
     toString(exif.DateTimeOriginal) ??
     toString(exif.DateTimeDigitized) ??
@@ -114,6 +125,10 @@ export async function parseExif(uri: string): Promise<ParsedExifData> {
         : undefined,
     ExposureTime: formatExposureTime(exposureValue),
     ISO: isoValue,
+    FocalLength: 
+      typeof focalLengthValue === 'number' 
+        ? `${Math.round(focalLengthValue)}mm` 
+        : undefined,
     DateTime: formatExifDate(dateValue),
     _raw: exif,
   };

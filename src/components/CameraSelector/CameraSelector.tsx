@@ -31,6 +31,12 @@ interface CameraSelectorProps {
   currentExifCamera?: string;
 }
 
+// Logo 填充色常量
+const LOGO_FILL_COLOR = colors.textPrimary;
+
+// 方形 Logo 品牌（需要特殊宽度处理）
+const SQUARE_LOGO_BRANDS = ['leica', 'apple', 'huawei', 'xiaomi'] as const;
+
 // ========== 辅助函数 ==========
 
 /**
@@ -118,8 +124,15 @@ export default function CameraSelector({
             <View style={styles.triggerLogoContainer}>
               <LogoComponent
                 height={18}
-                width={selectedBrand?.id && ['leica', 'apple', 'huawei', 'xiaomi'].includes(selectedBrand.id) ? 22 : 50}
+                width={
+                  selectedBrand?.id &&
+                  SQUARE_LOGO_BRANDS.includes(selectedBrand.id as any)
+                    ? 22
+                    : 50
+                }
                 preserveAspectRatio="xMaxYMid meet"
+                fill={LOGO_FILL_COLOR}
+                style={{color: LOGO_FILL_COLOR}}
               />
             </View>
           ) : (

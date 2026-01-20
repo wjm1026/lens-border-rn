@@ -29,18 +29,19 @@ export const useFrameSettings = (
   const resetInfoSettings = useCallback(() => {
     setSettings(prev => ({
       ...prev,
-      showExif: DEFAULT_SETTINGS.showExif,
-      textColor: DEFAULT_SETTINGS.textColor,
-      infoLayout: DEFAULT_SETTINGS.infoLayout,
-      infoPadding: DEFAULT_SETTINGS.infoPadding,
-      infoGap: DEFAULT_SETTINGS.infoGap,
-      infoOffset: {...DEFAULT_SETTINGS.infoOffset},
-      line1Style: {...DEFAULT_SETTINGS.line1Style},
-      line2Style: {...DEFAULT_SETTINGS.line2Style},
-      customExif: {},
-      selectedCameraPresetId: null,
+      showExif: initialSettings.showExif,
+      showBrandLogo: initialSettings.showBrandLogo,
+      textColor: initialSettings.textColor,
+      infoLayout: initialSettings.infoLayout,
+      infoPadding: initialSettings.infoPadding,
+      infoGap: initialSettings.infoGap,
+      infoOffset: {...initialSettings.infoOffset},
+      line1Style: {...initialSettings.line1Style},
+      line2Style: {...initialSettings.line2Style},
+      customExif: {...initialSettings.customExif},
+      selectedCameraPresetId: initialSettings.selectedCameraPresetId,
     }));
-  }, []);
+  }, [initialSettings]);
 
   return {
     settings,

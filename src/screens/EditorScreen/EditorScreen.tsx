@@ -75,6 +75,13 @@ export default function EditorScreen({
     [settings, updateSettings],
   );
 
+  const handleTextColorChange = useCallback(
+    (color: string) => {
+      updateSettings('textColor', color);
+    },
+    [updateSettings],
+  );
+
   // 用于预览区域切换的动画透明度
   const fadeAnim = React.useRef(
     new Animated.Value(activeTab === 'crop' ? 1 : 1),
@@ -122,6 +129,7 @@ export default function EditorScreen({
               captureRef={previewCaptureRef}
               onInfoOffsetChange={updateInfoOffset}
               onCustomExifChange={handleCustomExifChange}
+              onTextColorChange={handleTextColorChange}
               cropRect={cropControls.cropRect}
               cropRotation={cropControls.cropRotation}
               cropFlip={cropControls.cropFlip}

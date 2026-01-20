@@ -22,6 +22,7 @@ interface SharedPreviewProps {
     key: keyof FrameSettings['customExif'],
     value: string,
   ) => void;
+  onTextColorChange?: (color: string) => void;
   onImageLoad?: () => void;
   onBgLoad?: () => void;
   disableBackgroundAnimation?: boolean;
@@ -38,6 +39,7 @@ export const SharedPreview = React.memo(
     cropFlip = {horizontal: false, vertical: false},
     onInfoOffsetChange,
     onCustomExifChange,
+    onTextColorChange,
     onImageLoad,
     onBgLoad,
     disableBackgroundAnimation,
@@ -151,6 +153,7 @@ export const SharedPreview = React.memo(
           framePadding={framePadding}
           onOffsetChange={onInfoOffsetChange}
           onCustomExifChange={onCustomExifChange}
+          onTextColorChange={onTextColorChange}
         />
       </View>
     );

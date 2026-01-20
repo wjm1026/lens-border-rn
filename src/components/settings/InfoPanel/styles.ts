@@ -57,12 +57,6 @@ export const infoPanelStyles = StyleSheet.create({
   },
 
   // ========== 区块 ==========
-  sectionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   sectionBlock: {
     marginBottom: 20,
   },
@@ -77,28 +71,5 @@ export const infoPanelStyles = StyleSheet.create({
   },
   lineStyleSection: {
     paddingBottom: 8,
-  },
-
-  // ========== 表单字段 ==========
-  field: {
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-    fontSize: fontSize.sm,
   },
 });

@@ -1,19 +1,23 @@
-import React, {useEffect, useMemo, useRef} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   PanResponder,
   StyleSheet,
   View,
   type TextStyle,
   type ViewStyle,
+  TouchableOpacity,
 } from 'react-native';
 
 import type {FrameSettings} from '../../types';
 import {DEFAULT_EXIF_INFO} from '../../config';
 import EditableText from './EditableText';
+import LogoPickerModal from './LogoPickerModal';
+import LogoColorPickerModal from './LogoColorPickerModal';
 import {
-  getBrandByPresetId, 
-  getCameraPresetById, 
-  detectBrandFromContent
+  getBrandByPresetId,
+  getCameraPresetById,
+  detectBrandFromContent,
+  BRAND_LOGOS,
 } from '../../data/index';
 
 interface InfoOverlayProps {
@@ -24,6 +28,7 @@ interface InfoOverlayProps {
     key: keyof FrameSettings['customExif'],
     value: string,
   ) => void;
+  onTextColorChange?: (color: string) => void;
 }
 
 const toFontWeight = (value: number): TextStyle['fontWeight'] =>
@@ -34,9 +39,14 @@ export default function InfoOverlay({
   framePadding,
   onOffsetChange,
   onCustomExifChange,
+  onTextColorChange,
 }: InfoOverlayProps) {
+  const [showLogoPicker, setShowLogoPicker] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const offsetRef = useRef(settings.infoOffset);
   const dragStartRef = useRef(settings.infoOffset);
+  const isFirstRun = useRef(true);
 
   useEffect(() => {
     offsetRef.current = settings.infoOffset;
@@ -61,14 +71,10 @@ export default function InfoOverlay({
   );
 
   // 用于编辑的值（显示当前自定义值或使用占位符）
-  const lensValue = settings.customExif.lens ?? '';
   const paramsValue = settings.customExif.params ?? '';
-  const dateValue = settings.customExif.date ?? '';
 
   // 用于显示的默认值
-  const lensPlaceholder = DEFAULT_EXIF_INFO.lens;
   const paramsPlaceholder = DEFAULT_EXIF_INFO.params;
-  const datePlaceholder = DEFAULT_EXIF_INFO.date;
 
   const line1Style = useMemo(
     () => ({
@@ -106,8 +112,7 @@ export default function InfoOverlay({
     ],
   );
 
-  const alignItems: ViewStyle['alignItems'] =
-    settings.infoLayout === 'centered' ? 'center' : 'stretch';
+  const alignItems: ViewStyle['alignItems'] = 'center';
 
   const containerStyle = useMemo(
     () => ({
@@ -139,10 +144,22 @@ export default function InfoOverlay({
     onCustomExifChange?.(key, value);
   };
 
+  // 当 logoVariant 发生变化时（用户切换了 Logo 样式），自动清除自定义颜色
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    if (settings.customExif.logoColor) {
+      onCustomExifChange?.('logoColor', '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.customExif.logoVariant]);
+
   // ===========================================================================
   // 1. 数据解析与品牌识别
   // ===========================================================================
-  
+
   // 获取原始文本值
   const rawModelValue = settings.customExif.model || '';
 
@@ -156,7 +173,7 @@ export default function InfoOverlay({
         cameraPreset: getCameraPresetById(settings.selectedCameraPresetId),
       };
     }
-    
+
     // Case B: 没有选择预设，尝试从文本中智能分析品牌 (例如从 "NIKON D800" 识别出 Nikon)
     if (rawModelValue) {
       return {
@@ -172,14 +189,42 @@ export default function InfoOverlay({
   // 2. Logo 显示逻辑
   // ===========================================================================
 
-  const logoSource = brand?.logoWhite;
+  // 用户选择的 Logo 变体
+  const logoVariant = settings.customExif.logoVariant;
+  const customLogoColor = settings.customExif.logoColor;
+
+  // 计算实际使用的变体
+  // 规则：如果用户指定了自定义颜色，强制使用 'white' 变体（因为只有 white 变体支持 currentColor）
+  const effectiveVariant = useMemo(
+    () => (customLogoColor ? 'white' : logoVariant || 'white'),
+    [customLogoColor, logoVariant],
+  );
+
+  // 获取 Logo 资源
+  const logoSource = useMemo(() => {
+    if (!brand) return null;
+    return (
+      BRAND_LOGOS[brand.id]?.[effectiveVariant] ||
+      brand.logoWhite ||
+      brand.logoBlack
+    );
+  }, [brand, effectiveVariant]);
+
   const LogoComponent = logoSource?.default || logoSource;
-  // 确保 Logo 资源有效且不是数字索引（SVG组件通常是函数）
-  const hasValidLogo = !!(LogoComponent && typeof LogoComponent !== 'number');
-  
-  // 最终是否显示 Logo 的决策开关
-  // 规则: 设置开启 && 找到了品牌 && 品牌有有效的Logo资源
+  const hasValidLogo = !!LogoComponent && typeof LogoComponent !== 'number';
   const shouldShowLogo = settings.showBrandLogo && !!brand && hasValidLogo;
+
+  // 计算 Logo 颜色
+  // Logo 颜色完全独立于文字颜色
+  // 仅对 white 变体生效（其他变体使用 SVG 原本的颜色）
+  const activeLogoColor = useMemo(() => {
+    // 如果用户设置了自定义 Logo 颜色，使用它
+    if (customLogoColor) return customLogoColor;
+    // 非 white 变体使用 SVG 原本的颜色
+    if (logoVariant && logoVariant !== 'white') return undefined;
+    // white 变体默认使用白色（独立于文字颜色）
+    return '#FFFFFF';
+  }, [customLogoColor, logoVariant]);
 
   // ===========================================================================
   // 3. 文案排重逻辑
@@ -189,13 +234,13 @@ export default function InfoOverlay({
   const actualModelPlaceholder = useMemo(() => {
     // 默认回退值
     const defaultText = DEFAULT_EXIF_INFO.model;
-    
+
     if (cameraPreset) {
       // 如果显示 Logo -> 用简短型号 (e.g. "Z8")
       // 如果仅显示文字 -> 用完整型号 (e.g. "Nikon Z8")
       return shouldShowLogo ? cameraPreset.modelOnly : cameraPreset.displayName;
     }
-    
+
     return defaultText;
   }, [cameraPreset, shouldShowLogo]);
 
@@ -226,12 +271,12 @@ export default function InfoOverlay({
           return text.slice(brand.name.length).trim();
         }
       }
-      
+
       // 尝试移除 Brand ID (e.g. "nikon" from "NIKON CORPORATION D800")
       if (brand.id) {
         const brandIdLower = brand.id.toLowerCase();
         if (lowerText.startsWith(brandIdLower)) {
-           return text.slice(brand.id.length).trim(); 
+          return text.slice(brand.id.length).trim();
         }
       }
     }
@@ -241,7 +286,7 @@ export default function InfoOverlay({
   }, [rawModelValue, shouldShowLogo, cameraPreset, brand]);
 
   // ===========================================================================
-  // 4. 样式计算
+  // 4. 样式计算与渲染
   // ===========================================================================
 
   const logoHeight = settings.line1Style.fontSize * 1.1;
@@ -253,25 +298,33 @@ export default function InfoOverlay({
   }
 
   return (
-    <View
-      style={[styles.container, containerStyle]}
-      {...panResponder.panHandlers}>
-      {settings.infoLayout === 'centered' ? (
+    <>
+      <View
+        style={[styles.container, containerStyle]}
+        {...panResponder.panHandlers}>
         <View style={styles.centeredBlock}>
           <View style={styles.modelRow}>
             {shouldShowLogo && (
-              <View style={styles.logoContainerCentered}>
+              <TouchableOpacity
+                onPress={() => setShowLogoPicker(true)}
+                onLongPress={() => setShowColorPicker(true)}
+                delayLongPress={500}
+                activeOpacity={0.6}
+                style={styles.logoContainerCentered}>
                 <LogoComponent
                   height={logoHeight}
                   width={logoWidth}
+                  fill={activeLogoColor}
+                  style={activeLogoColor ? {color: activeLogoColor} : undefined}
                   preserveAspectRatio="xMaxYMid meet"
                 />
-              </View>
+              </TouchableOpacity>
             )}
             <EditableText
               value={displayModelText}
               placeholder={actualModelPlaceholder}
               onChange={val => handleExifChange('model', val)}
+              onLongPress={() => setShowTextColorPicker(true)}
               style={line1Style}
               textAlign="center"
             />
@@ -281,63 +334,36 @@ export default function InfoOverlay({
               value={paramsValue}
               placeholder={paramsPlaceholder}
               onChange={val => handleExifChange('params', val)}
+              onLongPress={() => setShowTextColorPicker(true)}
               style={line2Style}
               textAlign="center"
             />
           </View>
         </View>
-      ) : (
-        <View style={styles.classicRow}>
-          <View style={styles.classicColumn}>
-            <View style={styles.modelRow}>
-              {shouldShowLogo && (
-                <View style={styles.logoContainerClassic}>
-                  <LogoComponent
-                    height={logoHeight}
-                    width={logoWidth}
-                    preserveAspectRatio="xMaxYMid meet"
-                  />
-                </View>
-              )}
-              <EditableText
-                value={displayModelText}
-                placeholder={actualModelPlaceholder}
-                onChange={val => handleExifChange('model', val)}
-                style={[styles.modelText, line1Style]}
-                textAlign="left"
-              />
-            </View>
-            <View style={styles.marginTopSmall}>
-              <EditableText
-                value={lensValue}
-                placeholder={lensPlaceholder}
-                onChange={val => handleExifChange('lens', val)}
-                style={line2Style}
-                textAlign="left"
-              />
-            </View>
-          </View>
-          <View style={[styles.classicColumn, styles.classicColumnRight]}>
-            <EditableText
-              value={paramsValue}
-              placeholder={paramsPlaceholder}
-              onChange={val => handleExifChange('params', val)}
-              style={line2Style}
-              textAlign="right"
-            />
-            <View style={styles.marginTopSmall}>
-              <EditableText
-                value={dateValue}
-                placeholder={datePlaceholder}
-                onChange={val => handleExifChange('date', val)}
-                style={line2Style}
-                textAlign="right"
-              />
-            </View>
-          </View>
-        </View>
-      )}
-    </View>
+      </View>
+
+      <LogoPickerModal
+        visible={showLogoPicker}
+        onClose={() => setShowLogoPicker(false)}
+        brand={brand}
+        selectedVariant={logoVariant}
+        onSelect={variant => handleExifChange('logoVariant', variant)}
+      />
+
+      <LogoColorPickerModal
+        visible={showColorPicker}
+        onClose={() => setShowColorPicker(false)}
+        currentColor={activeLogoColor || settings.textColor || '#FFFFFF'}
+        onColorChange={color => handleExifChange('logoColor', color)}
+      />
+
+      <LogoColorPickerModal
+        visible={showTextColorPicker}
+        onClose={() => setShowTextColorPicker(false)}
+        currentColor={settings.textColor || '#FFFFFF'}
+        onColorChange={color => onTextColorChange?.(color)}
+      />
+    </>
   );
 }
 
@@ -353,35 +379,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-  logoContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   logoContainerCentered: {
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-  },
-  logoContainerClassic: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  classicRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  classicColumn: {
-    flexShrink: 1,
-  },
-  classicColumnRight: {
-    alignItems: 'flex-end',
-  },
-  modelText: {
-    textTransform: 'uppercase',
-  },
-  marginTopSmall: {
-    marginTop: 2,
   },
 });

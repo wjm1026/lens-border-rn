@@ -24,6 +24,7 @@ interface ImagePreviewProps {
     key: keyof FrameSettings['customExif'],
     value: string,
   ) => void;
+  onTextColorChange?: (color: string) => void;
   cropRect?: CropRect;
   cropRotation?: number;
   cropFlip?: CropFlip;
@@ -37,6 +38,7 @@ export default function ImagePreview({
   captureRef,
   onInfoOffsetChange,
   onCustomExifChange,
+  onTextColorChange,
   cropRect = DEFAULT_CROP_RECT,
   cropRotation = 0,
   cropFlip = {horizontal: false, vertical: false},
@@ -96,6 +98,7 @@ export default function ImagePreview({
           cropFlip={cropFlip}
           onInfoOffsetChange={onInfoOffsetChange}
           onCustomExifChange={onCustomExifChange}
+          onTextColorChange={onTextColorChange}
         />
       </View>
     </View>

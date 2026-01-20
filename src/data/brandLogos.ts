@@ -11,6 +11,7 @@ export interface BrandLogoSet {
   alphaWhite?: any;
   alphaBlack?: any;
   isSquare?: boolean;
+  [key: string]: any;
 }
 
 export type BrandId =

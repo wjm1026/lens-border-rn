@@ -147,7 +147,6 @@ export const matchPresetByExif = (exifModel?: string): CameraPreset | undefined 
   }
 
   return undefined;
-  return undefined;
 };
 
 /**
@@ -177,9 +176,15 @@ export const detectBrandFromContent = (content: string): CameraBrand | undefined
   // 这样即使暂时没有录入该品牌的具体型号，只要能识别出品牌名，也能显示 Logo
   for (const brandId of BRAND_ORDER) {
     const name = BRAND_DISPLAY_NAMES[brandId];
+    
+    // 特殊别名处理
+    const aliases = [];
+    if (brandId === 'apple') aliases.push('iphone');
+    
     if (
         lowerContent.includes(brandId.toLowerCase()) || 
-        (name && lowerContent.includes(name.toLowerCase()))
+        (name && lowerContent.includes(name.toLowerCase())) ||
+        aliases.some(alias => lowerContent.includes(alias))
     ) {
         // 构造一个临时的 CameraBrand 对象
         return {

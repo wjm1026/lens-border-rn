@@ -26,6 +26,8 @@ interface ColorPickerProps {
   size?: number;
   onSlidingStart?: () => void;
   onSlidingComplete?: () => void;
+  initialOpen?: boolean;
+  onClose?: () => void;
 }
 
 const PRESET_COLORS = [
@@ -130,8 +132,10 @@ export function ColorPicker({
   size = 40,
   onSlidingStart,
   onSlidingComplete,
+  initialOpen = false,
+  onClose,
 }: ColorPickerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const initialHsv = hexToHsv(color);
   const [hue, setHue] = useState(initialHsv.h);
   const [saturation, setSaturation] = useState(initialHsv.s);
@@ -190,7 +194,8 @@ export function ColorPicker({
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
-  }, []);
+    onClose?.();
+  }, [onClose]);
 
   const handleHexInputChange = (text: string) => {
     const sanitized = text.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
@@ -343,6 +348,68 @@ export function ColorPicker({
       onPanResponderTerminate: () => {
         setIsInteracting(false);
         onSlidingComplete?.();
+      },
+    }),
+  ).current;
+
+  // 预设颜色滑动选择
+  const swatchLayouts = useRef<Record<number, {x: number; y: number; width: number; height: number}>>({});
+  const swatchContainerRef = useRef<View>(null);
+  const swatchContainerPos = useRef({x: 0, y: 0});
+  const lastSwatchIndex = useRef(-1);
+
+  const handleSwatchTouch = useCallback(
+    (pageX: number, pageY: number) => {
+      const rx = pageX - swatchContainerPos.current.x;
+      const ry = pageY - swatchContainerPos.current.y;
+
+      for (let i = 0; i < PRESET_COLORS.length; i++) {
+        const layout = swatchLayouts.current[i];
+        if (
+          layout &&
+          rx >= layout.x &&
+          rx <= layout.x + layout.width &&
+          ry >= layout.y &&
+          ry <= layout.y + layout.height
+        ) {
+          if (lastSwatchIndex.current !== i) {
+            handlePresetSelect(PRESET_COLORS[i]);
+            lastSwatchIndex.current = i;
+          }
+          break;
+        }
+      }
+    },
+    [handlePresetSelect],
+  );
+
+  const swatchPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onShouldBlockNativeResponder: () => true,
+      onPanResponderGrant: evt => {
+        setIsInteracting(true);
+        onSlidingStart?.();
+        lastSwatchIndex.current = -1;
+        const {pageX, pageY} = evt.nativeEvent;
+        swatchContainerRef.current?.measureInWindow((cx, cy) => {
+          swatchContainerPos.current = {x: cx, y: cy};
+          handleSwatchTouch(pageX, pageY);
+        });
+      },
+      onPanResponderMove: evt => {
+        handleSwatchTouch(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+      },
+      onPanResponderRelease: () => {
+        setIsInteracting(false);
+        onSlidingComplete?.();
+        lastSwatchIndex.current = -1;
+      },
+      onPanResponderTerminate: () => {
+        setIsInteracting(false);
+        onSlidingComplete?.();
+        lastSwatchIndex.current = -1;
       },
     }),
   ).current;
@@ -500,26 +567,24 @@ export function ColorPicker({
                 />
               </View>
 
-              {/* 预设颜色 */}
-              <View style={styles.swatchRow}>
-                {PRESET_COLORS.map(presetColor => (
-                  <TouchableOpacity
+              {/* 预设颜色 - 支持滑动选择 */}
+              <View
+                ref={swatchContainerRef}
+                style={styles.swatchRow}
+                {...swatchPanResponder.panHandlers}>
+                {PRESET_COLORS.map((presetColor, index) => (
+                  <View
                     key={presetColor}
+                    onLayout={e => {
+                      swatchLayouts.current[index] = e.nativeEvent.layout;
+                    }}
+                    pointerEvents="none"
                     style={[
                       styles.swatch,
                       {backgroundColor: presetColor},
                       localColor.toUpperCase() === presetColor.toUpperCase() &&
                         styles.swatchActive,
                     ]}
-                    onPressIn={() => {
-                      handlePresetSelect(presetColor);
-                      setIsInteracting(true);
-                      onSlidingStart?.();
-                    }}
-                    onPressOut={() => {
-                      setIsInteracting(false);
-                      onSlidingComplete?.();
-                    }}
                   />
                 ))}
               </View>

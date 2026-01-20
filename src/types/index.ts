@@ -61,6 +61,8 @@ export interface FrameSettings {
     lens?: string;
     params?: string;
     date?: string;
+    logoVariant?: string;
+    logoColor?: string;
   };
   selectedCameraPresetId?: string | null;
 
@@ -99,6 +101,7 @@ export interface ParsedExifData {
   FNumber?: string;
   ExposureTime?: string;
   ISO?: number | string;
+  FocalLength?: string;
   DateTime?: string;
   _raw?: unknown;
 }
