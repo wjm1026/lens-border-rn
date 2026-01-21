@@ -147,9 +147,15 @@ export default function InfoOverlay({
 
   // 持有回调引用，避免在 useEffect 依赖中引入不稳定引用
   const onCustomExifChangeRef = useRef(onCustomExifChange);
+  const logoColorRef = useRef(settings.customExif.logoColor);
+
   useEffect(() => {
     onCustomExifChangeRef.current = onCustomExifChange;
   }, [onCustomExifChange]);
+
+  useEffect(() => {
+    logoColorRef.current = settings.customExif.logoColor;
+  }, [settings.customExif.logoColor]);
 
   // 当 logoVariant 发生变化时（用户切换了 Logo 样式），自动清除自定义颜色
   useEffect(() => {
@@ -157,10 +163,11 @@ export default function InfoOverlay({
       isFirstRun.current = false;
       return;
     }
-    if (settings.customExif.logoColor) {
+    // 使用 ref 读取当前值，避免将 logoColor 加入依赖导致无限循环
+    if (logoColorRef.current) {
       onCustomExifChangeRef.current?.('logoColor', '');
     }
-  }, [settings.customExif.logoVariant, settings.customExif.logoColor]);
+  }, [settings.customExif.logoVariant]);
 
   // ===========================================================================
   // 1. 数据解析与品牌识别
