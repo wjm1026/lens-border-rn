@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 import type {FrameSettings} from '../../types';
-import {DEFAULT_EXIF_INFO} from '../../config';
+import {DEFAULT_EXIF_INFO, LOGO_HEIGHT_SCALE} from '../../config';
 import EditableText from './EditableText';
 import LogoPickerModal from './LogoPickerModal';
 import LogoColorPickerModal from './LogoColorPickerModal';
@@ -145,6 +145,12 @@ export default function InfoOverlay({
     onCustomExifChange?.(key, value);
   };
 
+  // 持有回调引用，避免在 useEffect 依赖中引入不稳定引用
+  const onCustomExifChangeRef = useRef(onCustomExifChange);
+  useEffect(() => {
+    onCustomExifChangeRef.current = onCustomExifChange;
+  }, [onCustomExifChange]);
+
   // 当 logoVariant 发生变化时（用户切换了 Logo 样式），自动清除自定义颜色
   useEffect(() => {
     if (isFirstRun.current) {
@@ -152,10 +158,9 @@ export default function InfoOverlay({
       return;
     }
     if (settings.customExif.logoColor) {
-      onCustomExifChange?.('logoColor', '');
+      onCustomExifChangeRef.current?.('logoColor', '');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.customExif.logoVariant]);
+  }, [settings.customExif.logoVariant, settings.customExif.logoColor]);
 
   // ===========================================================================
   // 1. 数据解析与品牌识别
@@ -323,7 +328,7 @@ export default function InfoOverlay({
   // 4. 样式计算与渲染
   // ===========================================================================
 
-  const logoHeight = settings.line1Style.fontSize * 1.1;
+  const logoHeight = settings.line1Style.fontSize * LOGO_HEIGHT_SCALE;
   const brandLogos = brand ? BRAND_LOGOS[brand.id] : null;
   const variantMeta = brandLogos?.variants?.[effectiveVariant];
 

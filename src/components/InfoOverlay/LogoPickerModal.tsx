@@ -11,6 +11,7 @@ import {
 
 import {BRAND_LOGOS} from '../../data/index';
 import type {CameraBrand} from '../../data/index';
+import {colors} from '../../theme';
 
 interface LogoPickerModalProps {
   visible: boolean;
@@ -64,7 +65,7 @@ export default function LogoPickerModal({
 
               // 背景色处理：如果是白色logo，给个深色背景方便看；黑色的给浅色背景
               const isWhiteVariant = variant.toLowerCase().includes('white');
-              const bgColor = isWhiteVariant ? '#333' : '#f5f5f5';
+              const bgColor = isWhiteVariant ? colors.borderSubtle : colors.placeholder;
 
               return (
                 <TouchableOpacity
@@ -81,13 +82,13 @@ export default function LogoPickerModal({
                   <Src
                     width={60}
                     height={40}
-                    style={{color: isWhiteVariant ? '#FFF' : '#000'}}
-                    fill={isWhiteVariant ? '#FFF' : '#000'}
+                    style={isWhiteVariant ? styles.svgWhite : styles.svgDark}
+                    fill={isWhiteVariant ? colors.white : colors.textDark}
                   />
                   <Text
                     style={[
                       styles.variantName,
-                      {color: isWhiteVariant ? '#ccc' : '#666'},
+                      isWhiteVariant ? styles.variantNameLight : styles.variantNameDark,
                     ]}>
                     {variant}
                   </Text>
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
-    color: '#333',
+    color: colors.textDim,
   },
   logoGrid: {
     flexDirection: 'row',
@@ -155,5 +156,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
     position: 'absolute',
     bottom: 4,
+  },
+  variantNameLight: {
+    color: colors.textSecondary,
+  },
+  variantNameDark: {
+    color: colors.textMuted,
+  },
+  svgWhite: {
+    color: colors.white,
+  },
+  svgDark: {
+    color: colors.textDark,
   },
 });

@@ -17,7 +17,12 @@ import {Camera, ChevronDown, Search, Sparkles} from 'lucide-react-native';
 
 import {useCameraSelectorState} from '../../hooks/useCameraSelectorState';
 import {useMenuPosition} from '../../hooks/useMenuPosition';
-import {CAMERA_SELECTOR_MENU_MAX_HEIGHT} from '../../config';
+import {
+  CAMERA_SELECTOR_MENU_MAX_HEIGHT,
+  SELECTOR_LOGO_HEIGHT,
+  SELECTOR_SQUARE_LOGO_WIDTH,
+  SELECTOR_WIDE_LOGO_WIDTH,
+} from '../../config';
 import {colors} from '../../theme';
 import {getBrandByPresetId, type CameraPreset} from '../../data';
 import BrandGroup from './BrandGroup';
@@ -132,12 +137,12 @@ export default function CameraSelector({
           {isPresetSelected && hasLogo ? (
             <View style={styles.triggerLogoContainer}>
               <LogoComponent
-                height={18}
+                height={SELECTOR_LOGO_HEIGHT}
                 width={
                   selectedBrand?.id &&
                   SQUARE_LOGO_BRANDS.includes(selectedBrand.id as any)
-                    ? 22
-                    : 50
+                    ? SELECTOR_SQUARE_LOGO_WIDTH
+                    : SELECTOR_WIDE_LOGO_WIDTH
                 }
                 preserveAspectRatio="xMaxYMid meet"
                 fill={LOGO_FILL_COLOR}

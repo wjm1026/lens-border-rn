@@ -160,6 +160,8 @@ export const SharedPreview = React.memo(
   },
 );
 
+SharedPreview.displayName = 'SharedPreview';
+
 const styles = StyleSheet.create({
   imageFrame: {
     backgroundColor: 'transparent',

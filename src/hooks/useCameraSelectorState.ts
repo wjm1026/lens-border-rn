@@ -1,6 +1,6 @@
 import {useCallback, useMemo, useState} from 'react';
 
-import {CAMERA_BRANDS, getCameraPresetById} from '../data/cameraPresets';
+import {CAMERA_BRANDS, getCameraPresetById} from '../data';
 
 interface CameraSelectorStateOptions {
   selectedId?: string | null;
